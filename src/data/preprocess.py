@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+import math
 from pathlib import Path
 import sys
 
@@ -291,6 +292,85 @@ def preprocess_all_data() -> dict[str, pd.DataFrame]:
     print(f"Final Interactions shape: {processed_data['interactions'].shape}")
 
     return processed_data
+
+def time_based_split(interactions_df: pd.DataFrame,
+                     user_col: str = 'student_id',
+                     item_col: str = 'presentation_id',
+                     time_col: str = 'last_interaction_date',
+                     split_ratio: float = 0.8, # Or use a specific date like config.TEST_SPLIT_DATE
+                     time_unit_threshold: int = None # Alternative: split based on date value
+                    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Splits interaction data into train and test sets based on time.
+
+    Sorts interactions by time for each user and splits them.
+    Ensures that both train and test sets have users and items seen in training.
+
+    Args:
+        interactions_df (pd.DataFrame): DataFrame of aggregated interactions.
+        user_col (str): Column name for user IDs.
+        item_col (str): Column name for item IDs.
+        time_col (str): Column name for the timestamp/date used for splitting.
+        split_ratio (float): Proportion of interactions per user to keep for training (0.0 to 1.0).
+                              Used if time_unit_threshold is None.
+        time_unit_threshold (int): Timestamp/date value to split on. All interactions before or
+                                   at this time go to train, after go to test. Overrides split_ratio if set.
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame]: train_df, test_df
+    """
+    print("Performing time-based split...")
+    print(f"Original interactions shape: {interactions_df.shape}")
+
+    # Sort by user and time to ensure consistent splitting per user
+    df_sorted = interactions_df.sort_values(by=[user_col, time_col]).reset_index(drop=True)
+
+    train_list = []
+    test_list = []
+
+    if time_unit_threshold is not None:
+        print(f"Splitting based on time threshold: {time_col} <= {time_unit_threshold}")
+        train_df = df_sorted[df_sorted[time_col] <= time_unit_threshold].copy()
+        test_df = df_sorted[df_sorted[time_col] > time_unit_threshold].copy()
+        print(f" Initial train size: {train_df.shape[0]}, Initial test size: {test_df.shape[0]}")
+
+    else:
+        print(f"Splitting based on ratio per user: {split_ratio * 100}% train")
+        # Group by user and take the first 'split_ratio' interactions for train
+        def split_user_interactions(user_group):
+            n_interactions = len(user_group)
+            n_train = math.ceil(n_interactions * split_ratio)
+            train_list.append(user_group.iloc[:n_train])
+            test_list.append(user_group.iloc[n_train:])
+
+        df_sorted.groupby(user_col).apply(split_user_interactions)
+        train_df = pd.concat(train_list).reset_index(drop=True)
+        test_df = pd.concat(test_list).reset_index(drop=True)
+        print(f" Initial train size: {train_df.shape[0]}, Initial test size: {test_df.shape[0]}")
+
+    # --- Filter Test Set ---
+    # Ensure users and items in the test set were also present in the training set
+    train_users = set(train_df[user_col].unique())
+    train_items = set(train_df[item_col].unique())
+
+    test_df_filtered = test_df[
+        test_df[user_col].isin(train_users) &
+        test_df[item_col].isin(train_items)
+    ].copy()
+
+    dropped_count = test_df.shape[0] - test_df_filtered.shape[0]
+    if dropped_count > 0:
+        print(f"Filtered {dropped_count} interactions from test set (users/items not in train).")
+
+    print(f"Final Training set shape: {train_df.shape}")
+    print(f"Final Test set shape: {test_df_filtered.shape}")
+    print(f"Users in Train: {train_df[user_col].nunique()}, Users in Test: {test_df_filtered[user_col].nunique()}")
+    print(f"Items in Train: {train_df[item_col].nunique()}, Items in Test: {test_df_filtered[item_col].nunique()}")
+
+    if test_df_filtered.empty:
+        print("Warning: Test set is empty after filtering!")
+
+    return train_df, test_df_filtered
 
 
 if __name__ == "__main__":
