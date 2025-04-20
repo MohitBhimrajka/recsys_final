@@ -49,5 +49,3 @@ This document summarizes the initial findings from exploring the Open University
     *   Item features derived from `courses` (length) and `vle` (activity type proportions) provide content information.
 5.  **Missing Data:** Specific strategies were applied (imputation for `imd_band`, dropping sparse critical data like `date_registration`, creating flags for `date_unregistration`).
 6.  **Item Space Constraint:** The final set of 22 unique course presentations after filtering is a major factor influencing model complexity choices and expected recommendation diversity.
-
-This EDA provided essential insights guiding the cleaning, feature engineering, filtering, and evaluation strategies employed in the subsequent stages of the project.

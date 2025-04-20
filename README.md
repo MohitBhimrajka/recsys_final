@@ -12,7 +12,7 @@ The project also includes a demonstration API (FastAPI) and a simple interactive
 
 *   **Source:** Open University Learning Analytics Dataset (OULAD)
 *   **Files Used:** `assessments.csv`, `courses.csv`, `studentAssessment.csv`, `studentInfo.csv`, `studentRegistration.csv`, `studentVle.csv`, `vle.csv`
-*   **Location:** Raw CSV files should be placed in the `data/raw/` directory.
+*   **Location:** Raw CSV files should be placed in the `data/raw/` directory after downloading.
 
 ## Features
 
@@ -92,21 +92,24 @@ recsys_final/
     pip install -r api/requirements.txt
     ```
 
-5.  **Set up PostgreSQL Database (Optional):**
-    *   Needed only if you plan to run `src/database/load_to_db.py` or use database features in the API (currently API uses saved model).
+5.  **Download OULAD Data:**
+    *   The OULAD dataset needs to be downloaded separately.
+    *   **Source:** You can typically find it by searching for "Open University Learning Analytics Dataset Download" or visiting data repositories like Kaggle or the original Open University source if available. A common source is: [https://www.kaggle.com/datasets/anlgrbz/student-demographics-online-education-dataoulad](https://www.kaggle.com/datasets/anlgrbz/student-demographics-online-education-dataoulad) (Check for the most current link).
+    *   **Action:** Download the dataset archive (usually a `.zip` file).
+    *   **Action:** Create the `data/raw/` directory within your `recsys_final` project folder if it doesn't exist.
+    *   **Action:** Extract the **seven required CSV files** (`assessments.csv`, `courses.csv`, `studentAssessment.csv`, `studentInfo.csv`, `studentRegistration.csv`, `studentVle.csv`, `vle.csv`) directly into the `recsys_final/data/raw/` directory. Do not place them in a subfolder within `raw/`.
+
+6.  **Set up PostgreSQL Database (Optional):**
+    *   Needed only if you plan to run `src/database/load_to_db.py`.
     *   Ensure PostgreSQL is installed and running.
     *   Create a database (e.g., `oulad_recsys`) and a user with privileges.
 
-6.  **Configure Database Connection (Optional):**
+7.  **Configure Database Connection (Optional):**
     *   Copy `.env.example` to `.env`: `cp .env.example .env`
     *   Edit `.env` and fill in your PostgreSQL `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`.
 
-7.  **Download OULAD Data:**
-    *   Obtain the OULAD dataset CSV files.
-    *   Place all required CSV files (`assessments.csv`, `courses.csv`, etc.) into the `data/raw/` directory.
-
 8.  **Verify Setup:**
-    *   Run the configuration check (prints info, checks raw data):
+    *   Run the configuration check (prints info, checks if raw data files are found in `data/raw/`):
         ```bash
         python src/config.py
         ```
