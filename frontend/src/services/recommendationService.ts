@@ -1,8 +1,7 @@
 // frontend/src/services/recommendationService.ts
-import { RecommendationResponse, User, RecommendationItem } from "../types"; // Adjust path if needed
+import { RecommendationResponse, User, RecommendationItem } from "../types";
 
-// Ensure this matches the running port and prefix of your API
-const API_BASE_URL = "http://localhost:8000/api/v1";
+const API_BASE_URL = "http://localhost:8000/api/v1"; // Ensure this matches your API
 
 /**
  * Fetches the list of available users from the API.
@@ -11,15 +10,20 @@ export const fetchUsers = async (): Promise<User[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/users`);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+        console.error(`HTTP error fetching users! status: ${response.status}`);
+        // Attempt to read error response body if available
+        try {
+            const errorBody = await response.json();
+            throw new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+        } catch {
+             throw new Error(`HTTP error! status: ${response.status}`);
+        }
     }
     const users: User[] = await response.json();
-    // Sort users by student_id for consistency
     return users.sort((a, b) => a.student_id - b.student_id);
   } catch (error) {
     console.error("Error fetching users:", error);
-    // Return empty array or re-throw, depending on how you want to handle errors
-    return [];
+    throw error; // Re-throw the error so the component can catch it
   }
 };
 
@@ -33,19 +37,26 @@ export const fetchRecommendations = async (userId: number, k: number = 10): Prom
     const response = await fetch(`${API_BASE_URL}/recommendations/${userId}?k=${k}`);
 
     if (!response.ok) {
-        // Handle 404 specifically - user might exist but have no recs, or unknown user
-        if(response.status === 404) {
-            console.warn(`User ${userId} not found or no recommendations available.`);
-            return []; // Return empty list for not found or no recs
+      // Handle 404 specifically - user might exist but have no recs, or unknown user
+      if (response.status === 404) {
+        // API doesn't distinguish between "unknown user" and "known user with no recs"
+        // It just doesn't find the user in the model. The service layer returns empty array.
+        console.warn(`User ${userId} not found in model or no recommendations available.`);
+        return []; // Return empty list gracefully
+      }
+      // Handle other errors
+      console.error(`HTTP error fetching recommendations! status: ${response.status}`);
+       try {
+            const errorBody = await response.json();
+            throw new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
+        } catch {
+             throw new Error(`HTTP error! status: ${response.status}`);
         }
-      throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data: RecommendationResponse = await response.json();
     return data.recommendations || []; // Ensure we return an array
   } catch (error) {
     console.error(`Error fetching recommendations for user ${userId}:`, error);
-    return []; // Return empty array on fetch error
+    throw error; // Re-throw error for component to handle
   }
 };
-
-// Add fetchPresentations if needed later
