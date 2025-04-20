@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # --- Configuration ---
     # Set to True if you want to drop all existing tables before creating new ones.
     # BE VERY CAREFUL WITH THIS IN PRODUCTION OR WITH VALUABLE DATA.
-    DROP_EXISTING_TABLES = False
+    DROP_EXISTING_TABLES = True
     # --- End Configuration ---
 
     main(drop_first=DROP_EXISTING_TABLES)

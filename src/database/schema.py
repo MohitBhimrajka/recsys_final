@@ -20,25 +20,33 @@ from src import config # Import DATABASE_URI from config
 # Define the base class for our ORM models
 Base = declarative_base()
 
-# --- Existing Table Definitions (User, Course, Presentation, VleItem, Registration, Interaction, Assessment, StudentAssessment) ---
-# (Keep all the existing class definitions exactly as they were before)
-
+# --- MODIFIED User Table Definition ---
 class User(Base):
     __tablename__ = 'users'
     student_id = Column(Integer, primary_key=True, comment='Unique student identifier')
-    gender = Column(String(10))
-    region = Column(String(255))
-    highest_education = Column(String(255))
-    imd_band = Column(String(50), nullable=True, comment='Index of Multiple Deprivation band, can be null')
-    age_band = Column(String(50))
-    num_prev_attempts = Column(Integer)
-    studied_credits = Column(Integer)
-    disability = Column(String(10))
+
+    # Store the processed/mapped features
+    gender_mapped = Column(Integer, comment='Mapped gender (e.g., M=0, F=1)')
+    highest_education_mapped = Column(Integer, comment='Mapped highest education (ordinal)')
+    imd_band_mapped = Column(Integer, nullable=True, comment='Mapped IMD band (ordinal, 0=Missing)')
+    age_band_mapped = Column(Integer, comment='Mapped age band (ordinal)')
+    disability_mapped = Column(Integer, comment='Mapped disability (Y=1, N=0)')
+    num_prev_attempts = Column(Integer, comment='Number of previous attempts') # Use this name in schema
+    studied_credits = Column(Integer, comment='Total credits studied')
+
+    # Keep original region if needed, or map it too
+    region = Column(String(255)) # Keep original region string
+
+    # Relationships (unchanged)
     registrations = relationship("Registration", back_populates="user")
     assessments_submitted = relationship("StudentAssessment", back_populates="user")
     interactions = relationship("Interaction", back_populates="user")
-    aggregated_interactions = relationship("AggregatedInteraction", back_populates="user") # Add relationship to new table
-    def __repr__(self): return f"<User(student_id={self.student_id}, region='{self.region}')>"
+    aggregated_interactions = relationship("AggregatedInteraction", back_populates="user")
+
+    def __repr__(self):
+        return f"<User(student_id={self.student_id}, region='{self.region}')>"
+
+# --- Other Table Definitions (Unchanged) ---
 
 class Course(Base):
     __tablename__ = 'courses'
@@ -57,7 +65,7 @@ class Presentation(Base):
     vle_items = relationship("VleItem", back_populates="presentation")
     assessments = relationship("Assessment", back_populates="presentation")
     interactions = relationship("Interaction", back_populates="presentation")
-    aggregated_interactions = relationship("AggregatedInteraction", back_populates="presentation") # Add relationship to new table
+    aggregated_interactions = relationship("AggregatedInteraction", back_populates="presentation")
     def __repr__(self): return f"<Presentation(module_id='{self.module_id}', presentation_code='{self.presentation_code}')>"
 
 class VleItem(Base):
@@ -79,6 +87,8 @@ class VleItem(Base):
     def __repr__(self): return f"<VleItem(vle_item_id={self.vle_item_id}, type='{self.activity_type}')>"
 
 class Registration(Base):
+    # Assumes we load the raw registration data separately if needed
+    # This schema isn't populated by the current load_to_db.py focusing on processed data
     __tablename__ = 'registrations'
     registration_id = Column(Integer, primary_key=True, autoincrement=True)
     student_id = Column(Integer, ForeignKey('users.student_id'), index=True)
@@ -118,6 +128,7 @@ class Interaction(Base):
     def __repr__(self): return f"<Interaction(student_id={self.student_id}, vle_item_id={self.vle_item_id}, date={self.interaction_date}, clicks={self.total_clicks})>"
 
 class Assessment(Base):
+    # Assumes we load the raw assessment data separately if needed
     __tablename__ = 'assessments'
     assessment_id = Column(Integer, primary_key=True)
     module_id = Column(String(50))
@@ -135,6 +146,7 @@ class Assessment(Base):
     def __repr__(self): return f"<Assessment(assessment_id={self.assessment_id}, type='{self.assessment_type}')>"
 
 class StudentAssessment(Base):
+    # Assumes we load the raw student assessment data separately if needed
     __tablename__ = 'student_assessments'
     student_assessment_id = Column(Integer, primary_key=True, autoincrement=True)
     student_id = Column(Integer, ForeignKey('users.student_id'), index=True)
@@ -147,8 +159,6 @@ class StudentAssessment(Base):
     __table_args__ = (UniqueConstraint('student_id', 'assessment_id', name='uq_student_assessment_submission'),)
     def __repr__(self): return f"<StudentAssessment(student_id={self.student_id}, assessment_id={self.assessment_id}, score={self.score})>"
 
-
-# --- NEW TABLE FOR AGGREGATED INTERACTIONS ---
 class AggregatedInteraction(Base):
     __tablename__ = 'aggregated_interactions'
 
@@ -157,32 +167,29 @@ class AggregatedInteraction(Base):
     module_id = Column(String(50)) # Part of FK to Presentation
     presentation_code = Column(String(50)) # Part of FK to Presentation
 
-    # Features from aggregation
+    # Features from aggregation (unchanged)
     total_clicks = Column(Integer)
     interaction_days = Column(Integer)
     first_interaction_date = Column(Integer)
     last_interaction_date = Column(Integer)
     implicit_feedback = Column(Float, index=True, comment='e.g., log1p(total_clicks)')
 
-    # Relationships
+    # Relationships (unchanged)
     user = relationship("User", back_populates="aggregated_interactions")
     presentation = relationship("Presentation", back_populates="aggregated_interactions",
                                 foreign_keys=[module_id, presentation_code],
                                 primaryjoin="and_(AggregatedInteraction.module_id==Presentation.module_id, AggregatedInteraction.presentation_code==Presentation.presentation_code)")
 
-    # Composite foreign key constraint to presentations
-    # Unique constraint ensures only one aggregated record per student/presentation
     __table_args__ = (ForeignKeyConstraint(['module_id', 'presentation_code'],
                                            ['presentations.module_id', 'presentations.presentation_code']),
                       UniqueConstraint('student_id', 'module_id', 'presentation_code', name='uq_agg_interaction'),
-                      Index('ix_agg_interactions_user_presentation', 'student_id', 'module_id', 'presentation_code')) # Index for user activity queries
+                      Index('ix_agg_interactions_user_presentation', 'student_id', 'module_id', 'presentation_code'))
 
     def __repr__(self):
         return f"<AggregatedInteraction(student_id={self.student_id}, presentation='{self.module_id}_{self.presentation_code}', feedback={self.implicit_feedback:.2f})>"
 
 
-# --- Engine and Metadata ---
-# (Engine/SessionLocal setup remains the same)
+# --- Engine and Metadata (Unchanged) ---
 engine = None
 if config.DATABASE_URI:
     try:
@@ -198,10 +205,10 @@ else:
     print("DATABASE_URI not found in config. Database engine not created.")
     engine = None
     SessionLocal = None
-    metadata = Base.metadata # Still define metadata so functions below don't break
+    metadata = Base.metadata
 
 
-# --- Utility Functions (Keep as they were) ---
+# --- Utility Functions (Unchanged) ---
 def create_tables(engine_to_use=engine):
     """Creates all tables defined in the metadata."""
     if not engine_to_use:
@@ -227,13 +234,10 @@ def drop_tables(engine_to_use=engine):
         print(f"Error dropping tables: {e}")
 
 if __name__ == "__main__":
-    # Example usage: This will now also create/drop the new aggregated_interactions table
     if engine:
         print("\nRunning schema utility functions...")
-        # Important: If you only want to ADD the new table without dropping others,
-        # just run create_tables(). If you run drop_tables(), it drops ALL tables.
         # drop_tables(engine) # Uncomment carefully to drop ALL tables first
-        create_tables(engine) # Use this to create tables (including the new one if it doesn't exist)
+        create_tables(engine)
         print("Schema utility functions finished.")
     else:
         print("\nDatabase engine not configured. Cannot run schema utilities.")
