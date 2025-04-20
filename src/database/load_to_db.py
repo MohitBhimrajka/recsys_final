@@ -77,30 +77,54 @@ def load_presentations(session, file_path=ITEMS_PATH):
 
 # --- load_aggregated_interactions function (Revert to bulk insert) ---
 def load_aggregated_interactions(session, file_path=INTERACTIONS_PATH):
-    """Loads aggregated interaction data using bulk insert."""
-    print(f"Loading aggregated interactions using bulk insert from {file_path}...")
-    if not file_path.exists(): print(f"Error: File not found: {file_path}"); return 0
+    """Loads aggregated interaction data using bulk insert, but only for students already loaded."""
+    print(f"Loading aggregated interactions from {file_path}...")
+    if not file_path.exists():
+        print(f"Error: File not found: {file_path}")
+        return 0
 
+    # 1) Read the Parquet
     interactions_df = pd.read_parquet(file_path)
     print(f"Loaded {interactions_df.shape[0]} aggregated interaction records from Parquet.")
-    if interactions_df.empty: print("Interactions Parquet file is empty."); return 0
-    if 'presentation_id' not in interactions_df.columns: print("Error: 'presentation_id' column missing"); return 0
-    if 'id_student' not in interactions_df.columns: print("Error: 'id_student' column missing"); return 0
+    if interactions_df.empty:
+        print("Interactions Parquet file is empty.")
+        return 0
 
-    # Split presentation_id
-    interactions_df[['module_id', 'presentation_code']] = interactions_df['presentation_id'].str.split('_', expand=True)
-    # Prepare data
-    interactions_load_df = interactions_df[['id_student', 'module_id', 'presentation_code', 'total_clicks','interaction_days', 'first_interaction_date', 'last_interaction_date','implicit_feedback']].copy()
-    interactions_load_df.rename(columns={'id_student': 'student_id'}, inplace=True)
-    interactions_data = interactions_load_df.to_dict(orient='records')
+    # 2) Pull the set of student_ids we just loaded into users
+    existing_users = {u.student_id for u in session.query(User.student_id).all()}
+    # 3) Filter out any interactions for students we didn’t load
+    before = interactions_df.shape[0]
+    interactions_df = interactions_df[interactions_df['student_id'].isin(existing_users)]
+    dropped = before - interactions_df.shape[0]
+    if dropped:
+        print(f"Dropped {dropped} aggregated rows for unknown student_id(s).")
 
+    # 4) Split presentation_id back into module_id and presentation_code
+    interactions_df[['module_id', 'presentation_code']] = (
+        interactions_df['presentation_id']
+        .str.split('_', expand=True)
+    )
+
+    # 5) Prepare the dict records
+    load_df = interactions_df[[
+        'student_id', 'module_id', 'presentation_code',
+        'total_clicks', 'interaction_days',
+        'first_interaction_date', 'last_interaction_date',
+        'implicit_feedback'
+    ]].copy()
+    load_df.rename(columns={'student_id': 'student_id'}, inplace=True)
+    data = load_df.to_dict(orient='records')
+
+    # 6) Bulk‐insert
     try:
-        session.bulk_insert_mappings(AggregatedInteraction, interactions_data); session.flush()
-        loaded_count = len(interactions_data)
-        print(f"Successfully loaded {loaded_count} records into 'aggregated_interactions' table.")
-        return loaded_count
-    except IntegrityError as e: session.rollback(); print(f"IntegrityError loading aggregated interactions: {e}"); return 0
-    except Exception as e: session.rollback(); print(f"An unexpected error occurred loading aggregated interactions: {e}"); return 0
+        session.bulk_insert_mappings(AggregatedInteraction, data)
+        session.flush()
+        print(f"Successfully loaded {len(data)} aggregated interactions.")
+        return len(data)
+    except IntegrityError as e:
+        session.rollback()
+        print(f"IntegrityError loading aggregated interactions: {e}")
+        return 0
 
 # --- main function with explicit check between transactions ---
 def main():
