@@ -66,6 +66,8 @@ TEST_SPLIT_DATE = '2014-09-01' # Example cutoff date for time-based split
 MIN_INTERACTIONS_PER_USER = 5
 MIN_USERS_PER_ITEM = 5
 
+TIME_SPLIT_THRESHOLD = 250
+
 # --- Evaluation Parameters ---
 TOP_K = 10 # For evaluation metrics like P@K, R@K, NDCG@K
 
