@@ -64,4 +64,6 @@ htmlcov/
 coverage.xml
 *.cover 
 
+# Files
 plan.md
+*.parquet
