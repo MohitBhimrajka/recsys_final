@@ -19,8 +19,6 @@ DB_NAME = os.getenv("DB_NAME")
 
 if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_NAME]):
     print("Warning: One or more database environment variables are not set.")
-    # Optionally raise an error or set defaults if appropriate
-    # raise ValueError("Missing database configuration in .env file")
     DATABASE_URI = None
 else:
     DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
@@ -28,23 +26,18 @@ else:
 print(f"Database URI configured: {'Yes' if DATABASE_URI else 'No'}") # Debug print
 
 # --- Project Structure Paths ---
-# Assumes this config.py is in RECSYS_FINAL/src/
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True) # Ensure processed dir exists
-
 NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 SAVED_MODELS_DIR = PROJECT_ROOT / "saved_models"
 SAVED_MODELS_DIR.mkdir(parents=True, exist_ok=True) # Ensure saved_models dir exists
-
 SRC_DIR = PROJECT_ROOT / "src"
 
 # --- Data File Names (Raw) ---
-# Adjust filenames if they differ in your data/raw directory
 ASSESSMENTS_CSV = RAW_DATA_DIR / "assessments.csv"
 COURSES_CSV = RAW_DATA_DIR / "courses.csv"
 STUDENT_ASSESSMENT_CSV = RAW_DATA_DIR / "studentAssessment.csv"
@@ -53,20 +46,24 @@ STUDENT_REGISTRATION_CSV = RAW_DATA_DIR / "studentRegistration.csv"
 STUDENT_VLE_CSV = RAW_DATA_DIR / "studentVle.csv"
 VLE_CSV = RAW_DATA_DIR / "vle.csv"
 
-# --- Data File Names (Processed - Example) ---
-# Define names for files generated during preprocessing
+# --- Data File Names (Processed) ---
 PROCESSED_INTERACTIONS = PROCESSED_DATA_DIR / "interactions_final.parquet"
 PROCESSED_USERS = PROCESSED_DATA_DIR / "users_final.parquet"
-PROCESSED_ITEMS = PROCESSED_DATA_DIR / "items_final.parquet" # e.g., Presentations
-# Add others as needed
+PROCESSED_ITEMS = PROCESSED_DATA_DIR / "items_final.parquet"
 
-# --- Modeling Parameters (Example - Can be expanded later) ---
+# --- Column Names (Standardized) ---
+# Used throughout the codebase for consistency
+USER_COL = 'id_student'
+ITEM_COL = 'presentation_id'
+SCORE_COL = 'implicit_feedback'
+TIME_COL = 'last_interaction_date'  # <<<--- ADD THIS LINE
+
+# --- Modeling Parameters ---
 RANDOM_SEED = 42
-TEST_SPLIT_DATE = '2014-09-01' # Example cutoff date for time-based split
+# TEST_SPLIT_DATE = '2014-09-01' # Kept for reference, but threshold is used now
 MIN_INTERACTIONS_PER_USER = 5
 MIN_USERS_PER_ITEM = 5
-
-TIME_SPLIT_THRESHOLD = 250
+TIME_SPLIT_THRESHOLD = 250 # Threshold used in time_based_split
 
 # --- Evaluation Parameters ---
 TOP_K = 10 # For evaluation metrics like P@K, R@K, NDCG@K
@@ -88,8 +85,12 @@ def check_raw_data_exists():
     return True
 
 if __name__ == "__main__":
-    # Example of how to use the config paths and check data
     print(f"Project Root: {PROJECT_ROOT}")
     print(f"Raw Data Dir: {RAW_DATA_DIR}")
-    print(f"Database URI: {DATABASE_URI}") # Be cautious printing URI if password is sensitive
+    print(f"Processed Data Dir: {PROCESSED_DATA_DIR}")
+    print(f"Database URI: {DATABASE_URI}")
+    print(f"Standard User Column: {USER_COL}")
+    print(f"Standard Item Column: {ITEM_COL}")
+    print(f"Standard Score Column: {SCORE_COL}")
+    print(f"Standard Time Column: {TIME_COL}")
     check_raw_data_exists()

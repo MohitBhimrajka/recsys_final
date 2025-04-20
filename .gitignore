@@ -35,8 +35,13 @@ env/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+notebooks/*.ipynb_checkpoints/
+notebooks/*.py
 
-# Project specific
+# Project specific directories
+saved_models/
+reports/
+data/
 *.log
 *.sqlite
 *.db
@@ -49,6 +54,7 @@ env/
 *.model
 *.weights
 *.onnx
+*.parquet
 
 # Environment variables
 .env
@@ -62,8 +68,10 @@ htmlcov/
 .coverage.*
 .cache
 coverage.xml
-*.cover 
+*.cover
 
-# Files
+# Testing
+.pytest_cache/
+
+# Project files
 plan.md
-*.parquet
