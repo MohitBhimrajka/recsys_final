@@ -1,5 +1,5 @@
 // frontend/tailwind.config.js
-const defaultTheme = require('tailwindcss/defaultTheme') // Import default theme
+const defaultTheme = require('tailwindcss/defaultTheme');
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -9,24 +9,49 @@ export default {
   ],
   theme: {
     extend: {
-        // Add custom font family (optional, requires font import)
-        fontFamily: {
-            sans: ['Inter', ...defaultTheme.fontFamily.sans], // Set Inter as default sans-serif
+      fontFamily: {
+        sans: ['Inter', ...defaultTheme.fontFamily.sans],
+      },
+      colors: {
+        // True Black Theme Palette
+        'background': '#000000', // Pure Black
+        'surface': '#111111',   // Very Dark Gray (subtle contrast)
+        'primary': {          // Accent Color (Keep Cyan)
+          light: '#67e8f9',   // cyan-300
+          DEFAULT: '#06b6d4', // cyan-500
+          dark: '#0e7490',   // cyan-700
         },
-        // Define custom colors (optional, use Tailwind defaults or define your own)
-        colors: {
-            'primary': {
-                light: '#67e8f9', // cyan-300
-                DEFAULT: '#06b6d4', // cyan-500
-                dark: '#0e7490', // cyan-700
-            },
-            'secondary': {
-                light: '#f0f9ff', // sky-50
-                DEFAULT: '#38bdf8', // sky-400
-                dark: '#0369a1', // sky-700
-            },
-            // Add more custom colors if needed
+        'secondary': {        // Secondary Accent (Optional - e.g., a subtle purple/violet)
+          light: '#a78bfa',  // violet-400
+          DEFAULT: '#8b5cf6', // violet-500
+          dark: '#7c3aed',   // violet-600
         },
+        'text-primary': '#ffffff', // Pure White (max contrast on black)
+        'text-secondary': '#e5e7eb', // Off-white (Tailwind gray-200)
+        'text-muted': '#9ca3af',     // Muted gray (Tailwind gray-400)
+        'border-color': '#2d2d2d', // Dark Gray Border (slightly lighter than surface)
+      },
+      // Add/keep animation keyframes
+      keyframes: {
+          fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+          },
+          fadeIn: {
+             '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+          },
+          // Example: Subtle background gradient animation for Hero?
+          gradientShift: {
+            '0%, 100%': { backgroundPosition: '0% 50%' },
+            '50%': { backgroundPosition: '100% 50%' },
+          }
+      },
+      animation: {
+          fadeInUp: 'fadeInUp 0.6s ease-out forwards',
+          fadeIn: 'fadeIn 0.5s ease-out forwards',
+          gradientShift: 'gradientShift 15s ease infinite', // Example usage
+      }
     },
   },
   plugins: [],

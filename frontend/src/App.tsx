@@ -1,22 +1,25 @@
 // frontend/src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout'; // Import the Layout
-import DemoPage from './pages/DemoPage';   // Import the Demo Page
-import AboutPage from './pages/AboutPage';  // Import the About Page
-import 'react-loading-skeleton/dist/skeleton.css'
-
+import Layout from './components/Layout';
+import HomePage from './pages/HomePage';
+import DemoPage from './pages/DemoPage';
+import AboutPage from './pages/AboutPage';
+import CodeExplorerPage from './pages/CodeExplorerPage';
+import 'react-loading-skeleton/dist/skeleton.css';
+import ScrollToTop from './components/ScrollToTop'; // Ensure this exists
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop /> {/* Ensures scrolling to top on navigation */}
       <Routes>
-        {/* Wrap all routes within the Layout component */}
         <Route path="/" element={<Layout />}>
-          {/* Define child routes - Outlet in Layout will render these */}
-          <Route index element={<DemoPage />} /> {/* index route renders at '/' */}
+          <Route index element={<HomePage />} />
+          <Route path="demo" element={<DemoPage />} />
           <Route path="about" element={<AboutPage />} />
-          {/* Add more routes here later if needed */}
-           {/* <Route path="*" element={<NotFoundPage />} /> */}
+          <Route path="code-explorer" element={<CodeExplorerPage />} />
+          {/* Future: Add a 404 Not Found page */}
+          {/* <Route path="*" element={<NotFoundPage />} /> */}
         </Route>
       </Routes>
     </BrowserRouter>

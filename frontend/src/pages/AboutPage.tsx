@@ -1,107 +1,138 @@
 // frontend/src/pages/AboutPage.tsx
 import React from 'react';
+import { Link } from 'react-router-dom'; // Import Link
+import { motion } from 'framer-motion';
+import { FiDatabase, FiFilter, FiLink2, FiTrendingUp, FiCheckCircle, FiXCircle, FiInfo, FiCode, FiGithub, FiExternalLink, FiBarChart2 } from 'react-icons/fi';
+
+// Step Component
+const ProcessStep: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+  isLast?: boolean;
+}> = ({ icon, title, children, isLast = false }) => {
+  return (
+    <motion.div
+      className="flex relative pb-12 md:pb-16" // Increased padding bottom
+      initial={{ opacity: 0, x: -30 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.2 }} // Adjusted amount
+      transition={{ duration: 0.6, ease: "easeOut" }} // Slightly longer duration
+    >
+      {/* Line Connector */}
+      {!isLast && (
+        <div className="absolute left-6 top-6 -bottom-6 w-0.5 bg-border-color opacity-50"></div> // Make line dimmer
+      )}
+
+      {/* Icon and Circle */}
+      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 border-2 border-primary inline-flex items-center justify-center text-primary relative z-10 shadow-md">
+        {icon}
+      </div>
+
+      {/* Content */}
+      <div className="flex-grow pl-6 md:pl-10">
+        <h3 className="font-semibold title-font text-xl md:text-2xl text-text-primary mb-2 tracking-wide">{title}</h3>
+        <div className="leading-relaxed text-text-muted text-sm md:text-base">{children}</div> {/* Wrap children for better styling scope */}
+      </div>
+    </motion.div>
+  );
+};
 
 const AboutPage: React.FC = () => {
   return (
-    // Apply consistent max-width and padding as used in DemoPage's wrapper
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
-        About This Recommender
+    // Use container from Layout
+    <div className="py-16 md:py-24">
+      <h1 className="text-4xl md:text-5xl font-bold text-center mb-16 md:mb-20 text-text-primary">
+        The Recommendation Process Explained
       </h1>
 
-      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg space-y-6">
+      {/* Vertical Stepper/Timeline Container */}
+      <div className="relative max-w-3xl mx-auto">
+         <ProcessStep icon={<FiDatabase size={24} />} title="1. Data Foundation (OULAD)">
+            We start with the Open University Learning Analytics Dataset, focusing on tables detailing student demographics (`studentInfo`),
+            course structure (`courses`), registrations (`studentRegistration`), and detailed VLE interactions (`studentVle`).
+        </ProcessStep>
 
-        <section>
-          <h2 className="text-2xl font-semibold text-indigo-700 mb-3">Project Goal</h2>
-          <p className="text-gray-700 leading-relaxed">
-            The goal of this project is to build a course recommendation system using the
-            Open University Learning Analytics Dataset (OULAD). We aim to recommend relevant
-            course presentations (specific offerings of a course module, like 'AAA_2013J')
-            to students based on their historical interactions within the Open University's
-            Virtual Learning Environment (VLE), demographics, and the characteristics of the
-            courses themselves. The idea is to help students discover courses they might find
-            engaging or useful based on the patterns learned from past student data.
-          </p>
-        </section>
+        <ProcessStep icon={<FiFilter size={24} />} title="2. Preprocessing & Filtering">
+            Raw data is cleaned (handling missing values, correcting types). VLE interactions are filtered to match active registration periods.
+            Critically, sparse data is reduced by removing users and items (course presentations) with very few interactions, improving model stability.
+        </ProcessStep>
 
-        <hr className="my-6"/>
+         <ProcessStep icon={<FiTrendingUp size={24} />} title="3. Quantifying Engagement">
+            Filtered VLE clicks are aggregated for each student-presentation pair. We calculate an <code className="bg-surface text-primary/80 text-xs px-1.5 py-0.5 rounded mx-0.5 border border-border-color">implicit_feedback</code> score using <code className="bg-surface text-primary/80 text-xs px-1.5 py-0.5 rounded mx-0.5 border border-border-color">log1p(total_clicks)</code>. Higher scores indicate stronger engagement.
+        </ProcessStep>
 
-        <section>
-          <h2 className="text-2xl font-semibold text-indigo-700 mb-3">The OULAD Dataset</h2>
-          <p className="text-gray-700 leading-relaxed">
-            The OULAD dataset contains anonymized information about students, their demographics,
-            registered courses (modules and presentations), interactions with the VLE (clicks on
-            resources, forums, quizzes, etc.), and assessment results across seven courses.
-            It's a rich dataset for analyzing student learning behaviors and building predictive models.
-            For this recommender, we primarily used the `studentInfo`, `courses`, `studentRegistration`,
-            and `studentVle` tables.
-          </p>
-        </section>
+        <ProcessStep icon={<FiLink2 size={24} />} title="4. Learning Item Connections (ItemCF)">
+           The core Item-Based Collaborative Filtering model analyzes the student-item interaction matrix (using the implicit feedback scores). It computes the <code className="bg-surface text-primary/80 text-xs px-1.5 py-0.5 rounded mx-0.5 border border-border-color">cosine similarity</code> between pairs of course presentations. Presentations frequently engaged with by the same users are considered similar.
+        </ProcessStep>
 
-        <hr className="my-6"/>
+         <ProcessStep icon={<FiCheckCircle size={24} />} title="5. Generating Personalized Scores">
+            When a student ID is selected in the demo:
+             <ul className="list-disc list-inside text-sm text-text-muted mt-2 space-y-1 pl-2">
+                <li>The system retrieves the presentations the student interacted with during training.</li>
+                <li>It looks up the similarity between these 'seen' items and all other 'unseen' candidate items.</li>
+                <li>A score is predicted for each unseen item based on the weighted average of similarities to the student's previously engaged items.</li>
+             </ul>
+        </ProcessStep>
 
-        <section>
-          <h2 className="text-2xl font-semibold text-indigo-700 mb-3">How Recommendations are Generated</h2>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            This demonstration uses an **Item-Based Collaborative Filtering (ItemCF)** model, which
-            performed best among several models evaluated during development. Here's a simplified overview
-            of the process:
-          </p>
-          <ol className="list-decimal list-inside space-y-3 text-gray-700">
-            <li>
-              <strong>Preprocessing & Implicit Feedback:</strong> Raw VLE clickstream data is processed. We filter out inactive periods and aggregate interactions per student for each course presentation they took. A key step is calculating an "implicit feedback" score, representing how engaged a student was with a presentation. In this project, we used <code className="bg-gray-200 text-sm p-1 rounded">log1p(total_clicks)</code> – meaning the more clicks, the higher the engagement score (using a log scale to temper the effect of extremely high click counts). We also filter out users and items with very few interactions to focus on more reliable data.
-            </li>
-            <li>
-              <strong>Item Similarity Calculation:</strong> The core idea of ItemCF is: "Courses that similar students interact with are similar". The model builds a matrix of students vs. the course presentations they interacted with (using the implicit feedback score). It then calculates the similarity (using cosine similarity) between pairs of course presentations based on which students interacted with them and how much. High similarity means students who took Course A often also took/engaged highly with Course B.
-            </li>
-            <li>
-              <strong>Prediction Generation:</strong> When you select a student ID:
-              <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
-                <li>The system retrieves the course presentations the selected student previously interacted with (from the training data).</li>
-                <li>It looks up the pre-calculated similarity between those "seen" courses and all other "candidate" courses the student *hasn't* seen.</li>
-                <li>A score is calculated for each candidate course based on how similar it is to the courses the student liked/interacted with in the past (weighted by the similarity scores and the student's past engagement).</li>
-                <li>The candidate courses are ranked by this predicted score.</li>
-              </ul>
-            </li>
-             <li>
-              <strong>Top-K Recommendations:</strong> The system displays the Top-K (e.g., Top 10) highest-scoring, previously unseen course presentations as recommendations.
-            </li>
-          </ol>
-        </section>
-
-         <hr className="my-6"/>
-
-         <section>
-            <h2 className="text-2xl font-semibold text-indigo-700 mb-3">Evaluation</h2>
-             <p className="text-gray-700 leading-relaxed">
-                Models were evaluated using a time-based split (training on earlier interactions, testing on later ones)
-                to simulate predicting future interests. Key metrics like Precision@10, Recall@10, and NDCG@10 were used.
-                ItemCF demonstrated the best performance, particularly in Recall and NDCG, indicating its effectiveness in
-                identifying and ranking relevant items for users within this dataset context. (See `reports/final_report.md` for detailed results).
-            </p>
-         </section>
-
-         <hr className="my-6"/>
-
-        <section>
-          <h2 className="text-2xl font-semibold text-indigo-700 mb-3">Limitations</h2>
-          <ul className="list-disc list-inside space-y-2 text-gray-700">
-            <li>
-              <strong>Cold Start:</strong> This model cannot generate recommendations for students with no prior interaction history in the training data, nor can it recommend brand new courses added after the model was trained.
-            </li>
-            <li>
-              <strong>Implicit Feedback Nuances:</strong> Click count is a proxy for engagement; it doesn't capture satisfaction or learning outcomes directly.
-            </li>
-             <li>
-              <strong>Limited Items:</strong> After filtering, the number of unique course presentations in the training data (22) is relatively small, which can limit the diversity of recommendations.
-            </li>
-             <li>
-              <strong>Static Model:</strong> The model currently loaded is based on a snapshot of the data. A production system would need mechanisms for periodic retraining.
-            </li>
-          </ul>
-        </section>
-
+         <ProcessStep icon={<FiBarChart2 size={24} />} title="6. Ranking & Recommendation" isLast={true}>
+            Candidate items are ranked in descending order based on their predicted scores. The top-K (currently 9 in the demo) highest-scoring, previously unseen items are displayed as personalized recommendations.
+        </ProcessStep>
       </div>
+
+       {/* Code Link Section */}
+       <motion.div
+          className="mt-24 text-center"
+          initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, delay: 0.2 }}
+       >
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">
+            <FiCode className="inline mr-2 text-primary" /> Curious About the Code?
+          </h2>
+          <p className="text-text-secondary max-w-xl mx-auto mb-8">
+            Dive deeper into the implementation details, explore the different models, or see the data processing pipeline.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Link to="/code-explorer" className="btn btn-secondary w-full sm:w-auto">
+                      Explore Project Structure <FiExternalLink className="inline ml-2" />
+                  </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <a href="https://github.com/mohitbhimrajka/recsys_final" target="_blank" rel="noopener noreferrer" className="btn btn-outline w-full sm:w-auto">
+                     View on GitHub <FiGithub className="inline ml-2"/>
+                  </a>
+              </motion.div>
+          </div>
+       </motion.div>
+
+      {/* Limitations Section */}
+      <motion.div
+         className="mt-24 p-8 md:p-10 bg-surface rounded-xl shadow-xl border border-border-color max-w-4xl mx-auto"
+         initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.6 }}
+      >
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-text-primary">
+            <FiInfo className="inline mr-2 text-primary" /> Important Considerations
+          </h2>
+          <ul className="list-none space-y-4 text-text-secondary text-sm md:text-base">
+             <li className="flex items-start">
+                <FiXCircle className="text-red-500 mr-3 mt-1 flex-shrink-0" size={18}/>
+                <span><strong className="text-text-primary">Cold Start:</strong> New users or new courses cannot be handled without retraining or alternative strategies.</span>
+             </li>
+              <li className="flex items-start">
+                <FiXCircle className="text-yellow-500 mr-3 mt-1 flex-shrink-0" size={18}/>
+                <span><strong className="text-text-primary">Implicit Feedback:</strong> Click counts are a proxy for interest, not a perfect measure of satisfaction or learning.</span>
+             </li>
+             <li className="flex items-start">
+                <FiXCircle className="text-blue-400 mr-3 mt-1 flex-shrink-0" size={18}/>
+                <span><strong className="text-text-primary">Data Snapshot:</strong> The demo model is static; a real-world system needs updates.</span>
+             </li>
+              <li className="flex items-start">
+                <FiXCircle className="text-green-500 mr-3 mt-1 flex-shrink-0" size={18}/>
+                <span><strong className="text-text-primary">Item Pool:</strong> The filtering process resulted in 22 unique course presentations, which limits the variety of recommendations.</span>
+             </li>
+          </ul>
+       </motion.div>
+
     </div>
   );
 };

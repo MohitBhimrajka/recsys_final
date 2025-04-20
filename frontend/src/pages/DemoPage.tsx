@@ -1,95 +1,191 @@
 // frontend/src/pages/DemoPage.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import UserSelector from '../components/UserSelector';
 import RecommendationList from '../components/RecommendationList';
 import ErrorMessage from '../components/ErrorMessage';
 import SkeletonCard from '../components/SkeletonCard';
-import { fetchRecommendations } from '../services/recommendationService';
+import { fetchRecommendations, fetchRandomUser } from '../services/recommendationService';
 import { RecommendationItem } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiRefreshCw, FiHelpCircle } from 'react-icons/fi';
 
 const DemoPage: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFetchingRandom, setIsFetchingRandom] = useState<boolean>(false);
+  const userSelectorRef = useRef<any>(null); // Ref for react-select instance
 
-  const handleUserSelect = useCallback(async (userId: number) => {
-    console.log("Fetching recommendations for user:", userId);
-    setSelectedUserId(userId);
+  // Removed useEffect for pre-fetching
+
+  // --- Fetch Recommendations Logic ---
+  const handleUserSelect = useCallback(async (userId: number | null) => {
+    if (userId === null) {
+        setSelectedUserId(null);
+        setRecommendations([]);
+        setError(null);
+        setIsLoading(false);
+        return;
+    }
+    const numericUserId = parseInt(String(userId), 10);
+    if (isNaN(numericUserId)) {
+        setError("Invalid User ID selected.");
+        return;
+    }
+    console.log("Fetching recommendations for user:", numericUserId);
+    setSelectedUserId(numericUserId);
     setIsLoading(true);
-    setError(null); // Clear previous errors
-    setRecommendations([]); // Clear previous recommendations immediately
-
+    setError(null);
+    setRecommendations([]);
     try {
-      // Optional: Simulate network delay
-      // await new Promise(resolve => setTimeout(resolve, 1000));
-      const fetchedRecommendations = await fetchRecommendations(userId, 10); // Fetch top 10
+      const fetchedRecommendations = await fetchRecommendations(numericUserId, 9);
       setRecommendations(fetchedRecommendations);
-      // Clear error on successful fetch, even if recommendations array is empty
       setError(null);
-    } catch (err: unknown) { // Catch unknown type
+    } catch (err: unknown) {
         console.error("API call failed:", err);
-        // Provide a user-friendly message
+        let message = "An unknown error occurred while fetching recommendations.";
         if (err instanceof Error) {
-             setError(`Failed to fetch recommendations: ${err.message}. Please check the API server and try again.`);
-        } else {
-            setError("An unknown error occurred while fetching recommendations.");
+             message = `Failed to fetch recommendations: ${err.message}. Please check the API server and try again.`;
         }
-        setRecommendations([]); // Ensure recommendations are cleared on error
+        setError(message);
+        setRecommendations([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // --- Handle Random User Click ---
+  const handleRandomUser = useCallback(async () => {
+    setIsFetchingRandom(true);
+    setError(null);
+    setRecommendations([]);
+    setSelectedUserId(null);
+     if (userSelectorRef.current?.select) {
+        userSelectorRef.current.select.setValue(null, 'clear');
+     }
+    try {
+        console.log("Fetching random user from API...");
+        const randomUser = await fetchRandomUser();
+        if (randomUser) {
+            const randomId = randomUser.student_id;
+            console.log(`Received random user ID: ${randomId}`);
+            if (userSelectorRef.current?.select) {
+               userSelectorRef.current.select.setValue({ value: randomId, label: String(randomId) }, 'select-option');
+             } else { console.warn("Could not set UserSelector value programmatically via ref."); }
+            setTimeout(() => handleUserSelect(randomId), 50);
+        } else { throw new Error("API did not return a random user."); }
+    } catch (err: unknown) {
+        console.error("Failed to select random user:", err);
+        let message = "Could not select a random user.";
+        if (err instanceof Error) { message = `Error selecting random user: ${err.message}`; }
+        setError(message);
+        setSelectedUserId(null);
+        setRecommendations([]);
+         if (userSelectorRef.current?.select) { userSelectorRef.current.select.clearValue(); }
+    } finally {
+        setIsFetchingRandom(false);
+    }
+  }, [handleUserSelect]);
+
+  // --- Animation Variants ---
+  const contentVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.98 },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
+    exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2, ease: "easeIn" } }
+  };
+
   return (
-    // Using container/max-width from Layout now, so no need here unless overriding
-    <div>
-      <header className="text-center mb-8">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Recommendation Demo
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Select a student ID using the searchable dropdown to view personalized course presentation recommendations based on the ItemCF model.
-        </p>
+    <div className="container mx-auto px-4 py-16 md:py-24 max-w-7xl">
+      <header className="text-center mb-10 md:mb-16 max-w-3xl mx-auto">
+        <motion.h1
+             className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-4"
+             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+        >
+          Interactive Recommendation Demo
+        </motion.h1>
+        <motion.p
+            className="text-text-secondary mb-6 md:text-lg" // Slightly larger text
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
+        >
+           Explore course suggestions generated by our Item-Based Collaborative Filtering model. Select a student ID from the OULAD training set below, or let us pick one randomly for you.
+        </motion.p>
+         <motion.p
+            className="text-xs text-text-muted"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}
+         >
+             The recommendations reflect courses similar to those the chosen student (and their peers) previously engaged with.
+        </motion.p>
       </header>
 
-      {/* Pass the main isLoading state to UserSelector for disabling */}
-      <UserSelector onUserSelect={handleUserSelect} isLoading={isLoading} />
+      {/* User Selection Area */}
+       <motion.div
+          className="max-w-xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}
+        >
+           <UserSelector
+             ref={userSelectorRef}
+             onUserSelect={handleUserSelect}
+             isLoading={isLoading || isFetchingRandom}
+            />
+           <div className="text-center mt-5">
+                <motion.button
+                    onClick={handleRandomUser}
+                    disabled={isFetchingRandom || isLoading}
+                    className="btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto shadow-lg"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    <FiRefreshCw size={16} className={`mr-2 ${isFetchingRandom ? 'animate-spin' : ''}`} />
+                    {isFetchingRandom ? 'Selecting...' : 'Try a Random Student'}
+                </motion.button>
+           </div>
+       </motion.div>
 
-      <div className="mt-6 min-h-[300px]"> {/* Added min-height to prevent layout jump */}
-        {/* Show skeleton ONLY when loading AND a user has been selected */}
-        {isLoading && selectedUserId && (
-          <div>
-            <h2 className="text-xl font-semibold mb-4 text-center text-gray-500 animate-pulse">
-                Loading Recommendations for Student {selectedUserId}...
-            </h2>
-            {/* Skeleton Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonCard key={index} />
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Show error message if there's an error AND not loading */}
-        {!isLoading && error && <ErrorMessage message={error} />}
+      {/* Results Area */}
+      <div className="mt-10 md:mt-14 min-h-[450px] relative">
+        <AnimatePresence mode="wait">
+          {/* Loading State */}
+          {isLoading && selectedUserId && (
+            <motion.div key="loading" variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full">
+               <h2 className="text-xl font-semibold mb-8 text-center text-text-muted animate-pulse">
+                  Loading Recommendations for Student <span className='font-bold text-primary'>{selectedUserId}</span>...
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                {Array.from({ length: 6 }).map((_, index) => ( <SkeletonCard key={`skel-${index}`} /> ))}
+              </div>
+            </motion.div>
+          )}
 
-        {/* Show RecommendationList ONLY when NOT loading, no error, and a user IS selected */}
-        {/* The list component itself handles the "no recommendations found" message */}
-        {!isLoading && !error && selectedUserId && (
-          <RecommendationList
-            recommendations={recommendations}
-            selectedUserId={selectedUserId} // Pass user ID for context in message
-          />
-        )}
+          {/* Error State */}
+          {!isLoading && error && (
+            <motion.div key="error" variants={contentVariants} initial="hidden" animate="visible" exit="exit">
+              <ErrorMessage message={error} />
+            </motion.div>
+          )}
 
-        {/* Initial state message when no user is selected AND not loading */}
-         {!isLoading && !error && !selectedUserId && (
-             <p className="text-center text-gray-500 mt-10 text-lg">
-                Please select a student ID above to get started.
-            </p>
-         )}
+          {/* Results State */}
+          {!isLoading && !error && selectedUserId && (
+            <motion.div key={`results-${selectedUserId}`} variants={contentVariants} initial="hidden" animate="visible" exit="exit">
+              <RecommendationList
+                recommendations={recommendations}
+                selectedUserId={selectedUserId}
+              />
+              {/* Context section removed */}
+            </motion.div>
+          )}
+
+          {/* Initial State */}
+          {!isLoading && !error && !selectedUserId && (
+             <motion.div key="initial" variants={contentVariants} initial="hidden" animate="visible" exit="exit">
+                 <p className="text-center text-text-muted mt-16 text-lg">
+                    Please search for and select a student ID, or use the random button above to view recommendations.
+                </p>
+             </motion.div>
+          )}
+
+        </AnimatePresence>
       </div>
     </div>
   );
