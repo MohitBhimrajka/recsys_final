@@ -24,10 +24,6 @@ ipykernel>=6.25.0   # For notebook kernel
 matplotlib>=3.7.0   # For plotting in EDA
 seaborn>=0.13.0     # For enhanced plotting in EDA
 
-# Experiment Tracking (Optional but Recommended)
-mlflow>=2.8.0
-wandb>=0.15.0
-
 # Testing (Optional but Recommended)
 pytest>=7.4.0
 
