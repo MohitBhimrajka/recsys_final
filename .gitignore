@@ -63,3 +63,5 @@ htmlcov/
 .cache
 coverage.xml
 *.cover 
+
+plan.md
