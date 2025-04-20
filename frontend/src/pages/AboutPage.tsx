@@ -1,6 +1,6 @@
 // frontend/src/pages/AboutPage.tsx
 import React from 'react';
-import { Link } from 'react-router-dom'; // Import Link
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiDatabase, FiFilter, FiLink2, FiTrendingUp, FiCheckCircle, FiXCircle, FiInfo, FiCode, FiGithub, FiExternalLink, FiBarChart2 } from 'react-icons/fi';
 
@@ -13,26 +13,19 @@ const ProcessStep: React.FC<{
 }> = ({ icon, title, children, isLast = false }) => {
   return (
     <motion.div
-      className="flex relative pb-12 md:pb-16" // Increased padding bottom
+      className="flex relative pb-12 md:pb-16"
       initial={{ opacity: 0, x: -30 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.2 }} // Adjusted amount
-      transition={{ duration: 0.6, ease: "easeOut" }} // Slightly longer duration
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      {/* Line Connector */}
-      {!isLast && (
-        <div className="absolute left-6 top-6 -bottom-6 w-0.5 bg-border-color opacity-50"></div> // Make line dimmer
-      )}
-
-      {/* Icon and Circle */}
+      {!isLast && ( <div className="absolute left-6 top-6 -bottom-6 w-0.5 bg-border-color opacity-50"></div> )}
       <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 border-2 border-primary inline-flex items-center justify-center text-primary relative z-10 shadow-md">
         {icon}
       </div>
-
-      {/* Content */}
       <div className="flex-grow pl-6 md:pl-10">
         <h3 className="font-semibold title-font text-xl md:text-2xl text-text-primary mb-2 tracking-wide">{title}</h3>
-        <div className="leading-relaxed text-text-muted text-sm md:text-base">{children}</div> {/* Wrap children for better styling scope */}
+        <div className="leading-relaxed text-text-muted text-sm md:text-base">{children}</div>
       </div>
     </motion.div>
   );
@@ -40,11 +33,13 @@ const ProcessStep: React.FC<{
 
 const AboutPage: React.FC = () => {
   return (
-    // Use container from Layout
     <div className="py-16 md:py-24">
-      <h1 className="text-4xl md:text-5xl font-bold text-center mb-16 md:mb-20 text-text-primary">
+      <motion.h1
+          className="text-4xl md:text-5xl font-bold text-center mb-16 md:mb-20 text-text-primary"
+          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+      >
         The Recommendation Process Explained
-      </h1>
+      </motion.h1>
 
       {/* Vertical Stepper/Timeline Container */}
       <div className="relative max-w-3xl mx-auto">
@@ -105,6 +100,7 @@ const AboutPage: React.FC = () => {
           </div>
        </motion.div>
 
+
       {/* Limitations Section */}
       <motion.div
          className="mt-24 p-8 md:p-10 bg-surface rounded-xl shadow-xl border border-border-color max-w-4xl mx-auto"
@@ -132,7 +128,6 @@ const AboutPage: React.FC = () => {
              </li>
           </ul>
        </motion.div>
-
     </div>
   );
 };

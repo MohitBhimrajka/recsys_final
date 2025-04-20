@@ -1,28 +1,28 @@
 // frontend/src/components/RecommendationCard.tsx
 import React from 'react';
 import { RecommendationItem } from '../types';
-import { motion } from 'framer-motion'; // Import motion
+import { motion } from 'framer-motion';
+import Tooltip from './Tooltip';
+import { FiInfo } from 'react-icons/fi';
 
 interface RecommendationCardProps {
   recommendation: RecommendationItem;
   rank: number;
 }
 
-// Animation variant for individual card hover effect (optional)
 const cardHoverVariant = {
   hover: {
     scale: 1.03,
-    boxShadow: "0px 10px 20px rgba(0, 0, 0, 0.2)", // Darker shadow on hover
-    transition: { duration: 0.2 }
+    boxShadow: "0px 10px 20px rgba(6, 182, 212, 0.1)", // Primary color shadow
+    transition: { duration: 0.2, ease: 'easeOut' } // Smoother ease
   }
 };
 
 const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation, rank }) => {
   return (
-    // Apply motion for hover and list animations (variants provided by list)
     <motion.div
-        className="bg-surface rounded-lg shadow-lg overflow-hidden border border-border-color h-full flex flex-col justify-between" // Ensure card takes full height of grid cell
-        layout // Add layout prop for smoother animations if size changes
+        className="bg-surface rounded-lg shadow-lg overflow-hidden border border-border-color h-full flex flex-col justify-between"
+        layout // Keep layout for smooth list animations
         variants={cardHoverVariant}
         whileHover="hover"
     >
@@ -32,9 +32,13 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
             <span className="text-xs font-bold uppercase tracking-wider text-background bg-primary px-2.5 py-1 rounded-full">
                 Rank #{rank}
             </span>
-            <span className="text-sm font-semibold text-text-secondary">
-                Score: <span className="text-primary font-bold">{recommendation.score.toFixed(3)}</span>
-             </span>
+            {/* Score with Tooltip */}
+            <Tooltip content="Model's predicted relevance score (higher is better)" position="top">
+                 <span className="text-sm font-semibold text-text-secondary flex items-center gap-1 cursor-help">
+                    Score: <span className="text-primary font-bold">{recommendation.score.toFixed(3)}</span>
+                    <FiInfo size={12} className="opacity-60" />
+                 </span>
+             </Tooltip>
         </div>
 
         {/* Main Content */}
@@ -42,26 +46,13 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
             {recommendation.presentation_id}
         </h3>
         <div className="text-sm text-text-muted space-y-1">
-            <p>
-                <span className="font-medium text-text-secondary">Module:</span> {recommendation.module_id}
-            </p>
-            <p>
-                 <span className="font-medium text-text-secondary">Presentation:</span> {recommendation.presentation_code}
-            </p>
+            <p><span className="font-medium text-text-secondary">Module:</span> {recommendation.module_id}</p>
+            <p><span className="font-medium text-text-secondary">Presentation:</span> {recommendation.presentation_code}</p>
             {recommendation.module_presentation_length != null && (
-                 <p>
-                     <span className="font-medium text-text-secondary">Duration:</span> {recommendation.module_presentation_length} days
-                </p>
+                 <p><span className="font-medium text-text-secondary">Duration:</span> {recommendation.module_presentation_length} days</p>
             )}
         </div>
       </div>
-
-      {/* Optional Footer - can add links or actions here */}
-      {/* <div className="bg-background px-5 py-3 mt-auto border-t border-border-color">
-        <button className="text-sm text-primary hover:text-primary-dark font-medium">
-          View Details →
-        </button>
-      </div> */}
     </motion.div>
   );
 };

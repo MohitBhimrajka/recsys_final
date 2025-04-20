@@ -1,17 +1,17 @@
 // frontend/src/components/ErrorMessage.tsx
 import React from 'react';
-import { motion } from 'framer-motion'; // Add animation
+import { motion } from 'framer-motion';
+import { FiAlertTriangle } from 'react-icons/fi'; // Using a different icon
 
 interface ErrorMessageProps {
   message: string;
 }
 
 const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
-  // Use red shades that work okay on dark background
-  const errorBgColor = "bg-red-900"; // Darker red background
+  const errorBgColor = "bg-red-900/80"; // Slightly transparent bg
   const errorBorderColor = "border-red-600";
-  const errorTextColor = "text-red-100"; // Lighter red text
-  const errorAccentColor = "text-red-400"; // For icon/bold text
+  const errorTextColor = "text-red-100";
+  const errorAccentColor = "text-red-400";
 
   return (
     <motion.div
@@ -19,18 +19,15 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className={`${errorBgColor} border-l-4 ${errorBorderColor} ${errorTextColor} p-4 rounded-md shadow-md my-6 max-w-xl mx-auto`}
+      className={`${errorBgColor} border ${errorBorderColor} ${errorTextColor} p-4 rounded-lg shadow-md my-6 max-w-xl mx-auto backdrop-blur-sm`} // Use regular border, backdrop blur
       role="alert"
     >
       <div className="flex">
         <div className="py-1">
-          {/* SVG Icon - adjusted color */}
-          <svg className={`fill-current h-6 w-6 ${errorAccentColor} mr-4`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-            <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zM11.4 5.4a1.4 1.4 0 1 0-2.8 0 1.4 1.4 0 0 0 2.8 0zM10 15a1 1 0 0 0 1-1v-4a1 1 0 0 0-2 0v4a1 1 0 0 0 1 1z"/>
-          </svg>
+          <FiAlertTriangle className={`h-6 w-6 ${errorAccentColor} mr-3`} /> {/* Icon */}
         </div>
         <div>
-          <p className={`font-bold ${errorAccentColor}`}>Error</p>
+          <p className={`font-semibold ${errorAccentColor} mb-1`}>Request Error</p> {/* Updated Title */}
           <p className="text-sm">{message}</p>
         </div>
       </div>

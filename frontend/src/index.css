@@ -5,55 +5,33 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth; /* Add smooth scrolling */
+    scroll-behavior: smooth;
   }
 
   body {
-    /* Apply the TRUE BLACK theme */
     @apply bg-background text-text-secondary font-sans antialiased;
   }
 
-  /* Style headings for better hierarchy */
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-text-primary font-semibold;
-  }
-
-  /* Adjusted heading sizes and margins */
+  h1, h2, h3, h4, h5, h6 { @apply text-text-primary font-semibold; }
   h1 { @apply text-4xl sm:text-5xl lg:text-6xl mb-6; }
-  h2 { @apply text-3xl sm:text-4xl lg:text-5xl mb-8; } /* Increased mb */
-  h3 { @apply text-2xl sm:text-3xl lg:text-4xl mb-6; } /* Increased mb */
+  h2 { @apply text-3xl sm:text-4xl lg:text-5xl mb-8; }
+  h3 { @apply text-2xl sm:text-3xl lg:text-4xl mb-6; }
   h4 { @apply text-xl sm:text-2xl lg:text-3xl mb-4; }
+  p { @apply mb-5 leading-relaxed text-base md:text-lg; }
+  a { @apply text-primary hover:text-primary-light transition-colors duration-200; }
 
-  p {
-      @apply mb-5 leading-relaxed text-base md:text-lg; /* Slightly larger default text, more margin */
-  }
+  .css-1u9des2-indicatorSeparator { @apply !bg-border-color; }
 
-  a {
-      @apply text-primary hover:text-primary-light transition-colors duration-200;
-  }
-
-  /* Update react-select styling for new theme */
-  .css-1u9des2-indicatorSeparator {
-      @apply !bg-border-color;
-  }
-
-  /* Custom scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 10px; /* Slightly wider */
-  }
-  ::-webkit-scrollbar-track {
-    background: theme('colors.background'); /* Match body bg */
-  }
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: theme('colors.background'); }
   ::-webkit-scrollbar-thumb {
     background-color: theme('colors.border-color');
     border-radius: 5px;
-    border: 2px solid theme('colors.background'); /* Create inset effect */
+    border: 2px solid theme('colors.background');
   }
-   ::-webkit-scrollbar-thumb:hover {
-       background-color: theme('colors.text-muted');
-   }
+   ::-webkit-scrollbar-thumb:hover { background-color: theme('colors.text-muted'); }
 
-   /* Define CSS variables for react-select styles */
+   /* CSS variables for react-select styles */
    :root {
     --color-background: theme('colors.background');
     --color-surface: theme('colors.surface');
@@ -65,19 +43,11 @@
   }
 }
 
-/* Updated Button Styles */
 @layer components {
-    .btn {
-        @apply inline-block px-8 py-3 rounded-lg font-semibold text-center transition duration-300 ease-in-out shadow-lg text-base md:text-lg transform hover:-translate-y-1; /* Added slight lift on hover */
-    }
-    .btn-primary {
-        @apply bg-primary text-background hover:bg-primary-dark focus:outline-none focus:ring-4 focus:ring-primary/50; /* Ring on focus */
-    }
-    .btn-secondary {
-         @apply bg-surface text-text-primary border border-border-color hover:bg-border-color focus:outline-none focus:ring-4 focus:ring-border-color/50; /* Ring on focus */
-    }
-    /* Example Outline Button */
-     .btn-outline {
-        @apply bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-background focus:outline-none focus:ring-4 focus:ring-primary/50;
-     }
+    .btn { @apply inline-block px-8 py-3 rounded-lg font-semibold text-center transition duration-300 ease-in-out shadow-lg text-base md:text-lg transform hover:-translate-y-1; }
+    .btn-primary { @apply bg-primary text-background hover:bg-primary-dark focus:outline-none focus:ring-4 focus:ring-primary/50; }
+    .btn-secondary { @apply bg-surface text-text-primary border border-border-color hover:bg-border-color focus:outline-none focus:ring-4 focus:ring-border-color/50; }
+    .btn-outline { @apply bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-background focus:outline-none focus:ring-4 focus:ring-primary/50; }
+    /* Smaller button variant */
+    .btn-sm { @apply px-5 py-2 text-sm; }
 }

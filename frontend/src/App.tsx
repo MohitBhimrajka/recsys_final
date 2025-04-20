@@ -6,19 +6,18 @@ import DemoPage from './pages/DemoPage';
 import AboutPage from './pages/AboutPage';
 import CodeExplorerPage from './pages/CodeExplorerPage';
 import 'react-loading-skeleton/dist/skeleton.css';
-import ScrollToTop from './components/ScrollToTop'; // Ensure this exists
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <BrowserRouter>
-      <ScrollToTop /> {/* Ensures scrolling to top on navigation */}
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="demo" element={<DemoPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="code-explorer" element={<CodeExplorerPage />} />
-          {/* Future: Add a 404 Not Found page */}
           {/* <Route path="*" element={<NotFoundPage />} /> */}
         </Route>
       </Routes>

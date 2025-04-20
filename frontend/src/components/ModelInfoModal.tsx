@@ -1,4 +1,4 @@
-// src/components/ModelInfoModal.tsx
+// frontend/src/components/ModelInfoModal.tsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiCheckCircle, FiXCircle } from 'react-icons/fi';

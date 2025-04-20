@@ -1,16 +1,16 @@
 // frontend/src/components/Navbar.tsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiCode, FiGithub, FiMenu } from 'react-icons/fi'; // Added FiMenu
-import { useState } from 'react'; // Added useState for mobile menu
-import { motion, AnimatePresence } from 'framer-motion'; // For mobile menu animation
+import { FiCode, FiGithub, FiMenu } from 'react-icons/fi';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Shared classes for NavLink
   const linkBaseClasses = "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1.5";
-  const activeLinkClasses = "bg-primary/10 text-primary"; // Subtle background on active
+  const activeLinkClasses = "bg-primary/10 text-primary";
   const inactiveLinkClasses = "text-text-secondary hover:bg-surface hover:text-text-primary";
 
   const getNavLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -33,7 +33,6 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    // Sticky navbar with slight transparency effect
     <nav className="bg-surface/95 backdrop-blur-sm shadow-md sticky top-0 z-50 border-b border-border-color">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -50,17 +49,14 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Right Side: Navigation Links & Actions (Desktop) */}
-          <div className="hidden md:flex items-center space-x-1"> {/* Reduced space slightly */}
-             {/* Navigation Links */}
+          <div className="hidden md:flex items-center space-x-1">
              <NavLink to="/" end className={getNavLinkClass}>Home</NavLink>
              <NavLink to="/demo" className={getNavLinkClass}>Demo</NavLink>
              <NavLink to="/about" className={getNavLinkClass}>How it Works</NavLink>
              <NavLink to="/code-explorer" className={getNavLinkClass}>
                <FiCode size={16} /> Code Explorer
              </NavLink>
-             {/* Divider */}
-             <span className="h-6 w-px bg-border-color mx-3" aria-hidden="true"></span> {/* Added margin */}
-             {/* GitHub Link */}
+             <span className="h-6 w-px bg-border-color mx-3" aria-hidden="true"></span>
              <a
                 href="https://github.com/mohitbhimrajka/recsys_final"
                 target="_blank"
@@ -94,7 +90,7 @@ const Navbar: React.FC = () => {
            {isMobileMenuOpen && (
                 <motion.div
                     id="mobile-menu"
-                    className="md:hidden border-t border-border-color"
+                    className="md:hidden border-t border-border-color bg-surface shadow-lg" // Added background
                     variants={mobileMenuVariants}
                     initial="hidden"
                     animate="visible"
@@ -105,7 +101,6 @@ const Navbar: React.FC = () => {
                         <NavLink to="/demo" className={getMobileNavLinkClass} onClick={toggleMobileMenu}>Demo</NavLink>
                         <NavLink to="/about" className={getMobileNavLinkClass} onClick={toggleMobileMenu}>How it Works</NavLink>
                         <NavLink to="/code-explorer" className={getMobileNavLinkClass} onClick={toggleMobileMenu}>Code Explorer</NavLink>
-                         {/* GitHub Link for Mobile */}
                          <a
                             href="https://github.com/mohitbhimrajka/recsys_final"
                             target="_blank"

@@ -1,17 +1,16 @@
 // frontend/src/pages/CodeExplorerPage.tsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiFolder, FiFileText, FiCpu, FiDatabase, FiLayout, FiBarChart, FiZap, FiSettings, FiMinusSquare, FiPlusSquare } from 'react-icons/fi'; // Adjusted icons
+import { FiFolder, FiFileText, FiCpu, FiDatabase, FiLayout, FiBarChart, FiZap, FiSettings, FiMinusSquare, FiPlusSquare } from 'react-icons/fi';
 
 // --- Interactive Directory Tree Component ---
 interface TreeNode {
     name: string;
     type: 'folder' | 'file';
-    comment?: string; // Optional comment
+    comment?: string;
     children?: TreeNode[];
 }
 
-// Define project structure as a nested object (ensure accuracy)
 const projectTreeData: TreeNode = {
     name: 'mohitbhimrajka-recsys_final/', type: 'folder', children: [
         { name: 'README.md', type: 'file', comment: 'Project overview & setup' },
@@ -24,9 +23,7 @@ const projectTreeData: TreeNode = {
                 { name: 'model_loader.py', type: 'file', comment: 'Loads trained ItemCF model' },
                 { name: 'schemas.py', type: 'file', comment: 'Pydantic API models' },
                 { name: 'services.py', type: 'file', comment: 'Core recommendation logic' },
-                { name: 'routers/', type: 'folder', children: [
-                    { name: 'recommendations.py', type: 'file', comment: 'API endpoints' }
-                ]}
+                { name: 'routers/', type: 'folder', children: [ { name: 'recommendations.py', type: 'file', comment: 'API endpoints' } ]}
             ]}
         ]},
         { name: 'frontend/', type: 'folder', comment: 'React/Vite Frontend', children: [
@@ -54,9 +51,7 @@ const projectTreeData: TreeNode = {
                  { name: 'dataset.py', type: 'file', comment: 'PyTorch Dataset classes' },
             ]},
             { name: 'database/', type: 'folder', comment: 'DB schema & loading' },
-            { name: 'evaluation/', type: 'folder', children: [
-                { name: 'evaluator.py', type: 'file', comment: 'Calculates metrics' }
-            ]},
+            { name: 'evaluation/', type: 'folder', children: [ { name: 'evaluator.py', type: 'file', comment: 'Calculates metrics' } ]},
             { name: 'models/', type: 'folder', children: [
                  { name: 'base.py', type: 'file', comment: 'Abstract model class' },
                  { name: 'item_cf.py', type: 'file', comment: 'ItemCF implementation' },
@@ -72,146 +67,106 @@ const projectTreeData: TreeNode = {
     ]
 };
 
-
-// Recursive component to render the tree node
 const TreeNodeComponent: React.FC<{ node: TreeNode; level: number }> = ({ node, level }) => {
-  const [isOpen, setIsOpen] = useState(level < 1); // Initially open top-level folders
+  const [isOpen, setIsOpen] = useState(level < 1);
   const isFolder = node.type === 'folder';
-
   const toggleOpen = () => { if (isFolder) setIsOpen(!isOpen); };
-
   const iconColor = isFolder ? (isOpen ? 'text-primary' : 'text-text-muted') : 'text-text-muted';
   const textColor = isFolder ? 'text-text-primary font-medium' : 'text-text-secondary';
 
   return (
-    <div style={{ paddingLeft: `${level * 20}px` }} className="text-sm font-mono select-none"> {/* Disable text selection */}
+    <div style={{ paddingLeft: `${level * 20}px` }} className="text-sm font-mono select-none">
       <div
         className={`flex items-center py-1 group hover:bg-border-color/20 rounded ${isFolder ? 'cursor-pointer' : ''}`}
-        onClick={toggleOpen}
-        role={isFolder ? 'button' : undefined}
-        tabIndex={isFolder ? 0 : -1} // Make folders focusable
-        onKeyDown={(e) => { if (isFolder && (e.key === 'Enter' || e.key === ' ')) toggleOpen(); }} // Keyboard toggle
+        onClick={toggleOpen} role={isFolder ? 'button' : undefined} tabIndex={isFolder ? 0 : -1}
+        onKeyDown={(e) => { if (isFolder && (e.key === 'Enter' || e.key === ' ')) toggleOpen(); }}
       >
-        {/* Indentation & Toggle Icon */}
         <span className="w-[14px] text-center mr-2 flex-shrink-0 text-text-muted">
           {isFolder && (isOpen ? <FiMinusSquare size={14} /> : <FiPlusSquare size={14} />)}
         </span>
-
-        {/* File/Folder Icon */}
         {isFolder ? <FiFolder size={16} className={`mr-2 flex-shrink-0 ${iconColor}`} /> : <FiFileText size={16} className={`mr-2 flex-shrink-0 ${iconColor}`} />}
-
-        {/* Name & Comment */}
         <span className={`${textColor}`}>{node.name}</span>
         {node.comment && <span className="ml-3 text-xs text-text-muted italic opacity-0 group-hover:opacity-100 transition-opacity">// {node.comment}</span>}
       </div>
-
-      {/* Children */}
       {isFolder && isOpen && node.children && (
         <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="border-l border-dashed border-border-color ml-[7px] overflow-hidden" // Add overflow hidden for animation
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }} className="border-l border-dashed border-border-color ml-[7px] overflow-hidden"
         >
-          {node.children.map((child, index) => (
-            // Combine name and index for potentially non-unique names within a folder
-            <TreeNodeComponent key={`${child.name}-${index}`} node={child} level={level + 1} />
-          ))}
+          {node.children.map((child, index) => ( <TreeNodeComponent key={`${child.name}-${index}`} node={child} level={level + 1} /> ))}
         </motion.div>
       )}
     </div>
   );
 };
 
-// DirectoryTree component using the new structure
 const InteractiveDirectoryTree: React.FC<{ structure: TreeNode }> = ({ structure }) => (
-  <div className="bg-surface p-4 md:p-6 rounded-lg border border-border-color shadow-inner max-h-[600px] overflow-y-auto"> {/* Added max-height & scroll */}
+  <div className="bg-surface p-4 md:p-6 rounded-lg border border-border-color shadow-inner max-h-[600px] overflow-y-auto">
       <TreeNodeComponent node={structure} level={0} />
   </div>
 );
 
-
 // HighlightItem component
 const HighlightItem: React.FC<{ icon: React.ReactNode; title: string; description: string; path?: string }> = ({ icon, title, description, path }) => (
     <motion.div
-      className="bg-surface p-6 rounded-xl border border-border-color shadow-lg h-full flex flex-col transform transition duration-300 hover:border-primary/50 hover:-translate-y-1.5 hover:shadow-primary/10" // Enhanced hover
+      className="bg-surface p-6 rounded-xl border border-border-color shadow-lg h-full flex flex-col transform transition duration-300 hover:border-primary/50 hover:-translate-y-1.5 hover:shadow-primary/10"
       initial={{ opacity: 0, y: 15 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0.2 }} // Adjusted amount
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       <div className="flex items-center mb-4">
         <span className="text-primary mr-4 text-2xl flex-shrink-0">{icon}</span>
         <h4 className="text-lg font-semibold text-text-primary flex-1 leading-snug">{title}</h4>
       </div>
-       <div className="flex-grow"> {/* Allow description to take space */}
-           {path && (
-              <p className="text-xs font-mono bg-background inline-block px-2 py-1 rounded mb-4 text-primary/80 border border-border-color break-all">{path}</p>
-           )}
+       <div className="flex-grow">
+           {path && ( <p className="text-xs font-mono bg-background inline-block px-2 py-1 rounded mb-4 text-primary/80 border border-border-color break-all">{path}</p> )}
            <p className="text-sm text-text-muted">{description}</p>
        </div>
     </motion.div>
   );
 
-
 const CodeExplorerPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-16 md:py-24 max-w-6xl">
-      <h1 className="text-4xl md:text-5xl font-bold text-center mb-16 md:mb-20 text-text-primary">
+      <motion.h1
+          className="text-4xl md:text-5xl font-bold text-center mb-16 md:mb-20 text-text-primary"
+           initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+      >
         Project Structure & Code Highlights
-      </h1>
+      </motion.h1>
 
       {/* Interactive Directory Structure */}
       <motion.div
           className="mb-16 md:mb-20"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-text-primary mb-8">Directory Overview</h2> {/* Increased margin */}
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-text-primary mb-8">Directory Overview</h2>
         <InteractiveDirectoryTree structure={projectTreeData} />
       </motion.div>
 
       {/* Key Areas Highlight */}
       <div>
         <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-text-primary mb-10">Code Highlights</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-stretch"> {/* Use items-stretch */}
-           {/* Descriptions Filled In */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
            <HighlightItem
-             icon={<FiDatabase />}
-             title="Data Processing Pipeline"
-             path="src/data/preprocess.py"
-             description="Cleans raw OULAD CSVs, handles missing values, filters interactions based on registration dates and minimum activity, aggregates engagement metrics (like clicks), and generates final user/item feature Parquet files."
-           />
+             icon={<FiDatabase />} title="Data Processing Pipeline" path="src/data/preprocess.py"
+             description="Cleans raw OULAD CSVs, handles missing values, filters interactions based on activity and registration, aggregates engagement metrics, and generates final user/item feature Parquet files." />
            <HighlightItem
-             icon={<FiCpu />}
-             title="Recommendation Models"
-             path="src/models/"
-             description="Contains Python implementations of various recommendation algorithms (Popularity, ItemCF, ALS Wrapper, NCF, Hybrid). Each model adheres to a common base class for `fit` and `predict` methods."
-           />
-            <HighlightItem
-             icon={<FiSettings />}
-             title="ItemCF Model (Demo)"
-             path="src/models/item_cf.py"
-             description="The specific Item-Based Collaborative Filtering logic used in the demo. Calculates item-item cosine similarity from the user-item interaction matrix and predicts scores based on items similar to a user's past interactions."
-           />
+             icon={<FiCpu />} title="Recommendation Models" path="src/models/"
+             description="Contains Python implementations of various recommendation algorithms (Popularity, ItemCF, ALS Wrapper, NCF, Hybrid). ItemCF is used in the live demo." />
            <HighlightItem
-             icon={<FiZap />}
-             title="Backend API (FastAPI)"
-             path="api/app/"
-             description="Serves the pre-trained ItemCF model via HTTP endpoints. Loads the model on startup and provides routes for user search (`/users`) and getting recommendations (`/recommendations/{user_id}`)."
-           />
+             icon={<FiSettings />} title="ItemCF Model (Demo)" path="src/models/item_cf.py"
+             description="The specific Item-Based Collaborative Filtering logic used in the demo. Calculates item similarity and predicts scores based on a user's past interactions." />
            <HighlightItem
-             icon={<FiLayout />}
-             title="Frontend UI (React)"
-             path="frontend/src/"
-             description="This interactive user interface. Built with React, TypeScript, Vite, and Tailwind CSS. It handles user input, fetches data from the API using services, manages application state, and renders the pages and components."
-           />
+             icon={<FiZap />} title="Backend API (FastAPI)" path="api/app/"
+             description="Serves the pre-trained ItemCF model via HTTP endpoints. Handles requests for user search, random user selection, and recommendation generation." />
            <HighlightItem
-             icon={<FiBarChart />}
-             title="Evaluation Framework"
-             path="src/evaluation/evaluator.py"
-             description="Implements the evaluation protocol using a time-based split. Calculates standard ranking metrics like Precision@k, Recall@k, and NDCG@k to assess model performance offline."
-           />
+             icon={<FiLayout />} title="Frontend UI (React)" path="frontend/src/"
+             description="This interactive interface! Built with React, TypeScript, Vite, and Tailwind CSS. Manages state, calls the API, and renders the user experience." />
+           <HighlightItem
+             icon={<FiBarChart />} title="Evaluation Framework" path="src/evaluation/evaluator.py"
+             description="Implements the evaluation protocol using a time-based split and calculates standard ranking metrics (Precision@k, Recall@k, NDCG@k) to assess model performance." />
         </div>
       </div>
     </div>

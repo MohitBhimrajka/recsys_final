@@ -2,20 +2,20 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiArrowRight, FiDatabase, FiSettings, FiZap, FiCheckCircle, FiInfo, FiGithub, FiBarChart2 } from 'react-icons/fi'; // Added FiBarChart2
+import { FiArrowRight, FiDatabase, FiSettings, FiZap, FiCheckCircle, FiInfo, FiGithub, FiBarChart2 } from 'react-icons/fi';
 import ModelInfoModal from '../components/ModelInfoModal';
 import { modelInfos, ModelInfo } from '../data/modelInfo';
 
 // Reusable Feature Card Component
 const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
   <motion.div
-    className="bg-surface p-6 rounded-xl shadow-xl border border-border-color text-center h-full flex flex-col transform transition duration-300 hover:scale-[1.03] hover:shadow-primary/20 hover:border-primary/30" // Added flex col for consistent footer button placement
+    className="bg-surface p-6 rounded-xl shadow-xl border border-border-color text-center h-full flex flex-col transform transition duration-300 hover:scale-[1.03] hover:shadow-primary/20 hover:border-primary/30"
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.2 }} // Trigger earlier
+    viewport={{ once: true, amount: 0.2 }}
     transition={{ duration: 0.5, ease: 'easeOut' }}
   >
-    <div className="flex-grow"> {/* Allow content to push footer down */}
+    <div className="flex-grow">
         <div className="text-primary text-4xl mb-5 inline-block">{icon}</div>
         <h3 className="text-xl font-semibold text-text-primary mb-3">{title}</h3>
         <p className="text-sm text-text-muted">{children}</p>
@@ -26,7 +26,7 @@ const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; children: Re
 // Model Tag Component
 const ModelTag: React.FC<{ model: ModelInfo; onClick: () => void; isDemoModel?: boolean }> = ({ model, onClick, isDemoModel = false }) => {
   const baseClasses = "border px-4 py-1.5 rounded-full text-sm cursor-pointer transition-all duration-200 flex items-center gap-1.5";
-  const activeClasses = "bg-primary/20 border-primary text-primary font-medium hover:bg-primary/30 shadow-sm"; // Added shadow
+  const activeClasses = "bg-primary/20 border-primary text-primary font-medium hover:bg-primary/30 shadow-sm";
   const inactiveClasses = "bg-background border-border-color text-text-muted hover:border-primary/50 hover:text-text-secondary";
 
   return (
@@ -43,9 +43,7 @@ const ModelTag: React.FC<{ model: ModelInfo; onClick: () => void; isDemoModel?: 
   );
 };
 
-
 const HomePage: React.FC = () => {
-  // State for modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
 
@@ -84,7 +82,6 @@ const HomePage: React.FC = () => {
         className="min-h-screen flex flex-col justify-center items-center text-center px-4 relative overflow-hidden bg-gradient-to-br from-black via-gray-900 to-surface"
       >
          <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:30px_30px]"></div>
-
         <motion.div variants={heroVariant} initial="hidden" animate="visible" className="z-10">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-text-primary mb-5 !leading-tight tracking-tight">
             Unlock Learning Paths
@@ -127,7 +124,6 @@ const HomePage: React.FC = () => {
 
       {/* --- Content Sections Container --- */}
       <div className="container mx-auto px-4 pt-24 pb-16 space-y-24 md:space-y-32">
-
         {/* Section 1: The Challenge & Data */}
         <motion.section
           variants={sectionVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
@@ -158,15 +154,14 @@ const HomePage: React.FC = () => {
             </FeatureCard>
           </div>
            <motion.div
-             className="text-center mt-14" // Increased margin
+             className="text-center mt-14"
              initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: 0.5 }} transition={{ delay: 0.3 }}
             >
-             <Link to="/about" className="btn btn-outline text-base px-8"> {/* Adjusted size */}
+             <Link to="/about" className="btn btn-outline text-base px-8">
                Learn More Details <FiArrowRight className="inline ml-1" />
              </Link>
            </motion.div>
         </motion.section>
-
 
         {/* Section 3: Models Explored (Interactive) */}
         <motion.section
@@ -209,7 +204,6 @@ const HomePage: React.FC = () => {
 
       </div>
 
-      {/* Modal Component */}
       <ModelInfoModal
         isOpen={isModalOpen}
         onClose={closeModal}

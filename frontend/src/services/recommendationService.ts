@@ -11,11 +11,6 @@ console.log("API Base URL:", API_BASE_URL); // Log the URL being used
  * @param limit - The maximum number of users to return.
  */
 export const searchUsers = async (query: string, limit: number = 50): Promise<User[]> => {
-  // Don't search if the query is empty, but API can handle this too
-  // if (!query && query !== "") { // Allow empty query for fetching all (if API supports)
-  //   return [];
-  // }
-
   try {
     // Construct the URL with query parameters
     const url = new URL(`${API_BASE_URL}/users`);
@@ -37,7 +32,6 @@ export const searchUsers = async (query: string, limit: number = 50): Promise<Us
       }
     }
     const users: User[] = await response.json();
-    // No need to sort here, API can handle ordering if needed
     return users;
   } catch (error) {
     console.error("Error searching users:", error);
@@ -76,7 +70,6 @@ export const fetchRecommendations = async (userId: number, k: number = 10): Prom
     throw error; // Re-throw error for component to handle
   }
 };
-
 
 /**
  * Fetches a single random user from the API.
