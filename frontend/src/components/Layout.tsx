@@ -9,12 +9,19 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
 
-  // Simple page transition variant
+  // Page transition variant
   const pageVariants = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeInOut' } },
-    exit: { opacity: 0, y: -5, transition: { duration: 0.2, ease: 'easeIn' } }
+    initial: { opacity: 0, y: 15 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.43, 0.13, 0.23, 0.96] } },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.3, ease: 'easeIn' } }
   };
+
+  // Subtle fade-in for the main content itself
+  const contentVariants = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1, transition: { duration: 0.4, delay: 0.1 } }, // Slight delay after page transition starts
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -22,16 +29,24 @@ const Layout: React.FC = () => {
       {/* AnimatePresence for page transitions */}
       <AnimatePresence mode="wait">
         {/* Use location.pathname as key to trigger transition on route change */}
-        <motion.main
+        <motion.div
           key={location.pathname}
-          className={`flex-grow ${isHomePage ? '' : 'container mx-auto px-4 pt-8 max-w-7xl'}`}
+          className="flex-grow" // Apply flex-grow here
           variants={pageVariants}
           initial="initial"
           animate="animate"
           exit="exit"
         >
-          <Outlet />
-        </motion.main>
+           {/* Add another motion div for content fade-in */}
+           <motion.main
+               className={`${isHomePage ? '' : 'container mx-auto px-4 pt-8 pb-16 max-w-7xl'}`}
+               variants={contentVariants} // Apply content fade-in here
+               initial="initial"
+               animate="animate"
+           >
+                <Outlet /> {/* Page content renders here */}
+           </motion.main>
+        </motion.div>
       </AnimatePresence>
       <Footer />
     </div>

@@ -4,73 +4,87 @@ import ReactDOM from 'react-dom'; // Import ReactDOM for portals
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TooltipProps {
-  content: string;
+  content: React.ReactNode; // Allow React nodes for content
   children: React.ReactElement<React.HTMLAttributes<HTMLElement>>;
   position?: 'top' | 'bottom' | 'left' | 'right';
   className?: string;
+  delay?: number; // Optional delay before showing
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top', className = '' }) => {
+const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top', className = '', delay = 0 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [coords, setCoords] = useState({ left: 0, top: 0 });
   const targetRef = useRef<HTMLDivElement>(null); // Ref for the wrapper div
+  const timeoutRef = useRef<number | null>(null); // Ref for delay timeout
 
-  const showTooltip = () => setIsVisible(true);
-  const hideTooltip = () => setIsVisible(false);
+  const showTooltip = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current); // Clear any existing hide timeout
+    timeoutRef.current = setTimeout(() => {
+        setIsVisible(true);
+    }, delay);
+  };
+
+  const hideTooltip = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current); // Clear any existing show timeout
+    setIsVisible(false);
+  };
 
   // Use useLayoutEffect to calculate position *after* render but before paint
   useLayoutEffect(() => {
     if (isVisible && targetRef.current) {
-      const rect = targetRef.current.getBoundingClientRect();
+      const targetRect = targetRef.current.getBoundingClientRect();
+      // Estimate tooltip dimensions (adjust if needed, or measure after first render)
+      const tooltipHeightEstimate = 30;
+      const tooltipWidthEstimate = 100; // Very rough estimate
+      const gap = 8; // Space between target and tooltip
+
       let newTop = 0;
       let newLeft = 0;
 
-      // Basic positioning logic (can be refined with tooltip dimensions)
-      // Note: This requires the portal target to be the body or similar
-      // We'll add scroll offsets for correct positioning relative to viewport
+      // Positioning logic relative to viewport
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
 
       switch (position) {
         case 'bottom':
-          newTop = rect.bottom + scrollY;
-          newLeft = rect.left + rect.width / 2 + scrollX;
+          newTop = targetRect.bottom + scrollY + gap;
+          newLeft = targetRect.left + scrollX + targetRect.width / 2;
           break;
         case 'left':
-          newTop = rect.top + rect.height / 2 + scrollY;
-          newLeft = rect.left + scrollX;
+          newTop = targetRect.top + scrollY + targetRect.height / 2;
+          newLeft = targetRect.left + scrollX - gap; // Move left of target
           break;
         case 'right':
-          newTop = rect.top + rect.height / 2 + scrollY;
-          newLeft = rect.right + scrollX;
+          newTop = targetRect.top + scrollY + targetRect.height / 2;
+          newLeft = targetRect.right + scrollX + gap; // Move right of target
           break;
         case 'top':
         default:
-          newTop = rect.top + scrollY;
-          newLeft = rect.left + rect.width / 2 + scrollX;
+          newTop = targetRect.top + scrollY - tooltipHeightEstimate - gap; // Position above target
+          newLeft = targetRect.left + scrollX + targetRect.width / 2; // Center horizontally
           break;
       }
       setCoords({ top: newTop, left: newLeft });
     }
   }, [isVisible, position]); // Recalculate when visibility or position changes
 
+  // Framer motion variants
   const tooltipVariants = {
     hidden: { opacity: 0, y: position === 'top' ? 5 : (position === 'bottom' ? -5 : 0), scale: 0.95 },
     visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
     exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' } }
   };
 
-  // Position adjustments for the tooltip itself based on coords
+  // Transform classes based on position to center the tooltip pointer
   let transformClasses = '';
-  let offsetClasses = '';
   switch (position) {
-    case 'top': transformClasses = '-translate-x-1/2'; offsetClasses = 'mb-2'; break;
-    case 'bottom': transformClasses = '-translate-x-1/2'; offsetClasses = 'mt-2'; break;
-    case 'left': transformClasses = '-translate-y-1/2 -translate-x-full'; offsetClasses = 'mr-2'; break; // Translate X full width left
-    case 'right': transformClasses = '-translate-y-1/2'; offsetClasses = 'ml-2'; break;
+    case 'top': transformClasses = '-translate-x-1/2'; break; // Center horizontally
+    case 'bottom': transformClasses = '-translate-x-1/2'; break; // Center horizontally
+    case 'left': transformClasses = '-translate-y-1/2 -translate-x-full'; break; // Translate full width left, center vertically
+    case 'right': transformClasses = '-translate-y-1/2'; break; // Center vertically
   }
 
-  const tooltipId = `tooltip-${content.replace(/\s+/g, '-').slice(0, 15)}`;
+  const tooltipId = `tooltip-${Math.random().toString(36).substring(7)}`; // Generate somewhat unique ID
 
   // Tooltip JSX to be rendered in the portal
   const tooltipElement = (
@@ -79,18 +93,23 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top', 
         <motion.div
           id={tooltipId}
           role="tooltip"
-          className={`fixed ${offsetClasses} z-[200] w-max max-w-xs px-3 py-1.5 text-xs font-medium text-white bg-gray-900/95 dark:bg-gray-700/95 rounded-md shadow-lg backdrop-blur-sm transform ${transformClasses}`}
+          className={`fixed z-[200] w-max max-w-xs px-3 py-1.5 text-xs font-medium text-white bg-gray-900/95 dark:bg-gray-800/95 rounded-md shadow-lg backdrop-blur-sm transform ${transformClasses}`} // Adjusted colors slightly
           style={{ left: `${coords.left}px`, top: `${coords.top}px` }} // Position using style
           variants={tooltipVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
+          // Prevent tooltip from stealing focus
+          aria-hidden="true"
         >
           {content}
         </motion.div>
       )}
     </AnimatePresence>
   );
+
+  // Check if running in a browser environment before creating portal
+   const portalTarget = typeof document !== 'undefined' ? document.body : null;
 
   return (
     // Wrapper div to attach events and ref
@@ -99,12 +118,13 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top', 
       className={`relative inline-flex ${className}`}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
-      onFocus={showTooltip}
-      onBlur={hideTooltip}
+      onFocus={showTooltip} // Show on focus for accessibility
+      onBlur={hideTooltip}  // Hide on blur for accessibility
     >
+      {/* Clone child to add aria-describedby for accessibility */}
       {React.cloneElement(children, { 'aria-describedby': tooltipId })}
-      {/* Render the tooltip into the body using a portal */}
-      {typeof document !== 'undefined' ? ReactDOM.createPortal(tooltipElement, document.body) : null}
+      {/* Render the tooltip into the body using a portal if possible */}
+      {portalTarget ? ReactDOM.createPortal(tooltipElement, portalTarget) : null}
     </div>
   );
 };

@@ -1,13 +1,16 @@
 // frontend/src/components/ErrorMessage.tsx
+// No significant changes needed for Phase 2, just ensuring styling is consistent with theme.
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FiAlertTriangle } from 'react-icons/fi'; // Using a different icon
 
 interface ErrorMessageProps {
   message: string;
+  title?: string; // Optional title
 }
 
-const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, title = "Request Error" }) => {
+  // Using Tailwind theme colors directly
   const errorBgColor = "bg-red-900/80"; // Slightly transparent bg
   const errorBorderColor = "border-red-600";
   const errorTextColor = "text-red-100";
@@ -24,10 +27,10 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
     >
       <div className="flex">
         <div className="py-1">
-          <FiAlertTriangle className={`h-6 w-6 ${errorAccentColor} mr-3`} /> {/* Icon */}
+          <FiAlertTriangle className={`h-6 w-6 ${errorAccentColor} mr-3 flex-shrink-0`} /> {/* Icon */}
         </div>
         <div>
-          <p className={`font-semibold ${errorAccentColor} mb-1`}>Request Error</p> {/* Updated Title */}
+          <p className={`font-semibold ${errorAccentColor} mb-1`}>{title}</p> {/* Use dynamic Title */}
           <p className="text-sm">{message}</p>
         </div>
       </div>

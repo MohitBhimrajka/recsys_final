@@ -1,4 +1,5 @@
 // frontend/src/components/ModelInfoModal.tsx
+// No changes needed in this phase, file provided for completeness.
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiCheckCircle, FiXCircle } from 'react-icons/fi';
@@ -16,7 +17,7 @@ const backdropVariants = {
 };
 
 const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 }, // Added slight vertical motion
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
     visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
     exit: { opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2, ease: 'easeIn' } },
 };
@@ -51,7 +52,7 @@ const ModelInfoModal: React.FC<ModelInfoModalProps> = ({ isOpen, onClose, model 
                             <h2 id="model-modal-title" className="text-xl md:text-2xl font-semibold text-primary">{model.name}</h2>
                             <button
                                 onClick={onClose}
-                                className="text-text-muted hover:text-text-primary transition-colors rounded-full p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" // Added focus style
+                                className="text-text-muted hover:text-text-primary transition-colors rounded-full p-1 outline-none focus-visible:ring-2 focus-visible:ring-primary" // Added focus style
                                 aria-label="Close modal"
                             >
                                 <FiX size={24} />
@@ -67,7 +68,7 @@ const ModelInfoModal: React.FC<ModelInfoModalProps> = ({ isOpen, onClose, model 
                                 {/* Pros Section with subtle background */}
                                 <div className="bg-green-900/10 p-4 rounded-lg border border-green-700/20">
                                     <h4 className="text-lg font-semibold text-green-400 mb-3 flex items-center">
-                                        <FiCheckCircle className="mr-2" /> Strengths
+                                        <FiCheckCircle className="mr-2 flex-shrink-0" /> Strengths {/* Added flex-shrink-0 */}
                                     </h4>
                                     <ul className="list-none space-y-2 text-sm text-text-muted">
                                         {model.pros.map((pro, index) => (
@@ -88,7 +89,7 @@ const ModelInfoModal: React.FC<ModelInfoModalProps> = ({ isOpen, onClose, model 
                                 {/* Cons Section with subtle background */}
                                 <div className="bg-red-900/10 p-4 rounded-lg border border-red-700/20">
                                     <h4 className="text-lg font-semibold text-red-400 mb-3 flex items-center">
-                                        <FiXCircle className="mr-2" /> Weaknesses
+                                        <FiXCircle className="mr-2 flex-shrink-0" /> Weaknesses {/* Added flex-shrink-0 */}
                                     </h4>
                                     <ul className="list-none space-y-2 text-sm text-text-muted">
                                         {model.cons.map((con, index) => (

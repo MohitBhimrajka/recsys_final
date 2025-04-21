@@ -7,29 +7,29 @@ export interface RecommendationItem {
     presentation_code: string;
     module_presentation_length?: number;
   }
-  
+
   export interface RecommendationResponse { // Primarily for ensemble result now
     recommendations: RecommendationItem[];
   }
-  
-  // --- NEW: Type for the response from the /all_models endpoint ---
+
+  // Type for the response from the /all_models endpoint
   export type AllModelsRecs = {
       // Key is the model name (string), value is the list of recommendations
       [modelName: string]: RecommendationItem[];
   };
-  
-  
+
+
   export interface User {
     student_id: number;
   }
-  
+
   export interface Presentation {
       presentation_id: string;
       module_id: string;
       presentation_code: string;
       module_presentation_length?: number;
   }
-  
+
   export interface ModelInfo {
       id: string;
       name: string; // This name should match the keys in AllModelsRecs and MODEL_WEIGHTS
@@ -38,7 +38,7 @@ export interface RecommendationItem {
       cons: string[];
       evaluationScore?: number; // Optional: Store NDCG or other metric here
   }
-  
+
   // Ensure model names here match the keys returned by the API (defined in model_loader.py)
   export const modelInfos: ModelInfo[] = [
       {
@@ -52,7 +52,7 @@ export interface RecommendationItem {
       {
           id: 'itemcf',
           name: 'ItemCF', // Matches key
-          description: 'Recommends courses similar to those a user previously interacted with, based on co-interaction patterns. Powers the main ensemble recommendation.',
+          description: 'Recommends courses similar to those a user previously interacted with, based on co-interaction patterns. Highly weighted in the ensemble.',
           pros: ['Personalized', 'Often effective for item discovery', 'Explainable (based on similar items)', 'Highly effective on this dataset'],
           cons: ['Data sparsity can be an issue', 'Cold-start problem for new users', 'Limited by items seen in training'],
            evaluationScore: 0.6153 // Example: NDCG@10 from report
@@ -82,8 +82,12 @@ export interface RecommendationItem {
            evaluationScore: 0.4698 // Example: NDCG@10 from report (note lower neg samples)
       },
   ];
-  
+
   // Helper to find ModelInfo by name
   export const findModelInfoByName = (name: string): ModelInfo | undefined => {
       return modelInfos.find(m => m.name === name);
   };
+
+// --- NEW TYPE FOR PRESENTATION DETAIL MODAL ---
+// Can just reuse RecommendationItem for now, as it contains all needed info
+export type PresentationDetailInfo = RecommendationItem;

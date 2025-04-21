@@ -4,25 +4,56 @@
 @tailwind utilities;
 
 @layer base {
+  /* Consistent CSS Variables derived from Tailwind theme */
+  :root {
+    --color-background: theme('colors.background');
+    --color-surface: theme('colors.surface');
+    --color-primary-default: theme('colors.primary.DEFAULT');
+    --color-primary-light: theme('colors.primary.light');
+    --color-primary-dark: theme('colors.primary.dark');
+    --color-text-primary: theme('colors.text-primary');
+    --color-text-secondary: theme('colors.text-secondary');
+    --color-text-muted: theme('colors.text-muted');
+    --color-border-color: theme('colors.border-color');
+  }
+
   html {
     scroll-behavior: smooth;
+    @apply scroll-pt-16; /* Offset scroll targets for fixed navbar */
   }
 
   body {
-    @apply bg-background text-text-secondary font-sans antialiased;
+    @apply bg-background text-text-secondary font-sans antialiased; /* Default text is secondary */
   }
 
-  h1, h2, h3, h4, h5, h6 { @apply text-text-primary font-semibold; }
-  h1 { @apply text-4xl sm:text-5xl lg:text-6xl mb-6; }
-  h2 { @apply text-3xl sm:text-4xl lg:text-5xl mb-8; }
-  h3 { @apply text-2xl sm:text-3xl lg:text-4xl mb-6; }
-  h4 { @apply text-xl sm:text-2xl lg:text-3xl mb-4; }
-  p { @apply mb-5 leading-relaxed text-base md:text-lg; }
-  a { @apply text-primary hover:text-primary-light transition-colors duration-200; }
+  /* Base Typography - Adjust sizes/margins */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-text-primary font-semibold tracking-tight; /* Primary text for headings */
+  }
+  h1 { @apply text-4xl sm:text-5xl lg:text-6xl mb-6 md:mb-8 leading-tight; } /* Adjusted margin */
+  h2 { @apply text-3xl sm:text-4xl lg:text-5xl mb-8 md:mb-10; } /* Adjusted margin */
+  h3 { @apply text-2xl sm:text-3xl lg:text-4xl mb-6 md:mb-8; } /* Adjusted margin */
+  h4 { @apply text-xl sm:text-2xl lg:text-3xl mb-4 md:mb-6; } /* Adjusted margin */
+  p { @apply mb-5 leading-relaxed text-base md:text-lg; } /* Body text uses text-secondary */
+  a { @apply text-primary hover:text-primary-light transition-colors duration-200 outline-none; }
+  /* Default focus visible style for links */
+  a:focus-visible { @apply ring-2 ring-primary ring-offset-2 ring-offset-background rounded-sm; } /* Adjusted rounding */
 
-  .css-1u9des2-indicatorSeparator { @apply !bg-border-color; }
+  /* General Focus Visible for Buttons, Inputs, etc. */
+  *:focus-visible {
+     @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background rounded; /* Default focus ring */
+  }
+  /* Remove default outline only when focus-visible is supported/applied */
+ *:focus:not(:focus-visible) {
+     @apply outline-none;
+  }
 
-  ::-webkit-scrollbar { width: 10px; }
+
+  /* React Select Style Integration (using CSS Variables) */
+  .css-1u9des2-indicatorSeparator { @apply !bg-border-color; } /* Example */
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: theme('colors.background'); }
   ::-webkit-scrollbar-thumb {
     background-color: theme('colors.border-color');
@@ -30,24 +61,24 @@
     border: 2px solid theme('colors.background');
   }
    ::-webkit-scrollbar-thumb:hover { background-color: theme('colors.text-muted'); }
-
-   /* CSS variables for react-select styles */
-   :root {
-    --color-background: theme('colors.background');
-    --color-surface: theme('colors.surface');
-    --color-primary: theme('colors.primary.DEFAULT');
-    --color-text-primary: theme('colors.text-primary');
-    --color-text-secondary: theme('colors.text-secondary');
-    --color-text-muted: theme('colors.text-muted');
-    --color-border-color: theme('colors.border-color');
-  }
 }
 
 @layer components {
-    .btn { @apply inline-block px-8 py-3 rounded-lg font-semibold text-center transition duration-300 ease-in-out shadow-lg text-base md:text-lg transform hover:-translate-y-1; }
-    .btn-primary { @apply bg-primary text-background hover:bg-primary-dark focus:outline-none focus:ring-4 focus:ring-primary/50; }
-    .btn-secondary { @apply bg-surface text-text-primary border border-border-color hover:bg-border-color focus:outline-none focus:ring-4 focus:ring-border-color/50; }
-    .btn-outline { @apply bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-background focus:outline-none focus:ring-4 focus:ring-primary/50; }
+    /* Button Styles - Use general focus-visible from base */
+    .btn {
+        @apply inline-block px-8 py-3 rounded-lg font-semibold text-center transition duration-300 ease-in-out shadow-lg text-base md:text-lg transform hover:-translate-y-1 focus:outline-none; /* Removed specific focus here */
+    }
+    .btn-primary {
+        @apply bg-primary text-background hover:bg-primary-dark; /* Removed specific focus here */
+    }
+    .btn-secondary {
+        @apply bg-surface text-text-primary border border-border-color hover:bg-border-color; /* Removed specific focus here */
+    }
+    .btn-outline {
+        @apply bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-background; /* Removed specific focus here */
+    }
     /* Smaller button variant */
-    .btn-sm { @apply px-5 py-2 text-sm; }
+    .btn-sm {
+        @apply px-5 py-2 text-sm;
+    }
 }

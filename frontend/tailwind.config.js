@@ -14,6 +14,7 @@ export default {
         sans: ['Inter', ...defaultTheme.fontFamily.sans], // Use Inter as the default sans-serif
       },
       // Define custom colors for the dark theme
+      // Ensuring these match CSS variables in index.css
       colors: {
         'background': '#000000', // Pure black background
         'surface': '#111111',    // Slightly lighter surface color
@@ -27,9 +28,9 @@ export default {
           DEFAULT: '#8b5cf6',  // Default secondary color (Violet 500)
           dark: '#7c3aed',     // Darker violet (Violet 600)
         },
-        'text-primary': '#ffffff',   // Main text color (white)
-        'text-secondary': '#e5e7eb', // Slightly muted text (Gray 200)
-        'text-muted': '#9ca3af',     // Muted text (Gray 400)
+        'text-primary': '#ffffff',   // Main text color (white) - For headings, important text
+        'text-secondary': '#e5e7eb', // Slightly muted text (Gray 200) - For body text
+        'text-muted': '#9ca3af',     // Muted text (Gray 400) - For placeholders, captions, less important info
         'border-color': '#2d2d2d',   // Border color for elements
       },
       // Define custom keyframes for animations
@@ -70,5 +71,6 @@ export default {
   // Add plugins
   plugins: [
     require('@tailwindcss/typography'), // Plugin for rich text styling (used in AboutPage)
+    // Potentially add require('@tailwindcss/forms') if needed later for consistent form styling
   ],
 }
