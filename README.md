@@ -72,7 +72,7 @@ recsys_final/
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/MohitBhimrajka/recsys_final
     cd recsys_final
     ```
 
