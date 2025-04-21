@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 import sys
 from pathlib import Path
 from typing import List, Any, Set, Dict # Added Dict
+import os # For cpu_count
 
 # Add project root for imports
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -19,11 +20,8 @@ from src.models.base import BaseRecommender
 from src.data.dataset import HybridDataset, create_mappings_and_unique_ids
 from src.models.content_encoder import ContentEncoder
 
-# ------------------------------------------
-# --- HybridNCF PyTorch Module (Definition) ---
-# ------------------------------------------
+# --- HybridNCF nn.Module Definition (Keep As Is) ---
 class HybridNCF(nn.Module):
-    # ... (Keep the HybridNCF nn.Module definition exactly as it was) ...
     def __init__(self, n_users: int, n_items: int, item_feature_dim: int,
                  cf_embedding_dim: int = 16,
                  content_embedding_dim: int = 16,
@@ -80,11 +78,9 @@ class HybridNCF(nn.Module):
         logits = self.final_layer(mlp_output)
         return logits.squeeze(-1)
 
-# ------------------------------------------------
 # --- Hybrid Wrapper (Implements BaseRecommender) ---
-# ------------------------------------------------
 class HybridNCFRecommender(BaseRecommender):
-    # ... (Keep __init__ method as it was) ...
+    # ... (Keep __init__ method as before) ...
     def __init__(self,
                  user_col='id_student',
                  item_col='presentation_id',
@@ -128,20 +124,17 @@ class HybridNCFRecommender(BaseRecommender):
         self.item_feature_dim = None
         self.item_features_array = None
 
-
+    # ... (Keep fit method as before) ...
     def fit(self, interactions_df: pd.DataFrame, item_features_df: pd.DataFrame):
-        # ... (Keep fit method exactly as it was) ...
         print(f"Fitting {self.__class__.__name__}...")
         if self.user_col not in interactions_df.columns or self.item_col not in interactions_df.columns:
              raise ValueError(f"interactions_df must contain '{self.user_col}' and '{self.item_col}'")
         if item_features_df.index.name != self.item_col:
-             # Attempt to fix index if possible
              if self.item_col in item_features_df.columns:
                  print(f"Warning: Setting index of item_features_df to '{self.item_col}'")
                  item_features_df = item_features_df.set_index(self.item_col)
              else:
                  raise ValueError(f"item_features_df must be indexed by or contain column '{self.item_col}'")
-
 
         self._create_mappings(interactions_df)
         unique_items_list = list(self.item_id_to_idx.keys())
@@ -172,19 +165,21 @@ class HybridNCFRecommender(BaseRecommender):
         train_dataset = HybridDataset(
             interactions_df=interactions_df,
             item_features_df=item_features_df,
-            all_item_ids=unique_items_list,
+            all_item_ids=unique_items_list, # Use original IDs here
             user_id_map=self.user_id_to_idx,
             item_id_map=self.item_id_to_idx,
             user_col=self.user_col,
             item_col=self.item_col,
             num_negatives=self.num_negatives
         )
+        num_workers = min(4, getattr(os, 'cpu_count', lambda: 1)())
+        print(f"Using {num_workers} workers for DataLoader.")
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=4,
-            pin_memory=True if self.device.type == 'cuda' else False # Check device type
+            num_workers=num_workers,
+            pin_memory=True if self.device.type == 'cuda' else False
         )
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
 
@@ -210,9 +205,8 @@ class HybridNCFRecommender(BaseRecommender):
         print("--- HybridNCF Training Finished ---")
         self.model.eval()
 
-
+    # ... (Keep predict method as before) ...
     def predict(self, user_id: Any, item_ids: List[Any]) -> List[float]:
-        # ... (Keep predict method exactly as it was) ...
         if self.model is None or self.item_features_array is None:
             raise RuntimeError("Model not fitted or item features not processed. Call fit() first.")
         if user_id not in self.user_id_to_idx:
@@ -228,6 +222,7 @@ class HybridNCFRecommender(BaseRecommender):
             item_idx = self.item_id_to_idx.get(iid)
             if item_idx is not None and 0 <= item_idx < self.n_items:
                  pred_item_indices.append(item_idx)
+                 # Retrieve pre-processed features using the internal index
                  pred_item_features.append(self.item_features_array[item_idx])
                  original_pos_map[item_idx] = i
 
@@ -242,32 +237,26 @@ class HybridNCFRecommender(BaseRecommender):
         else:
             feat_tensor = torch.tensor(np.vstack(pred_item_features), dtype=torch.float32).to(self.device)
 
+
         self.model.eval()
         with torch.no_grad():
-            # Pass features to forward method
             logits = self.model(user_tensor, item_tensor, feat_tensor)
         scores = logits.cpu().numpy()
 
         final_scores = [0.0] * len(item_ids)
         for idx, score in zip(pred_item_indices, scores):
-             # Handle case where score might be a single float if only one item predicted
-            final_scores[original_pos_map[idx]] = float(score)
+             final_scores[original_pos_map[idx]] = float(score)
 
         return final_scores
 
-
-    # --- Required Methods from BaseRecommender ---
+    # --- Required Methods from BaseRecommender (Keep As Is) ---
     def get_known_items(self) -> Set[Any]:
-        # Ensure mappings exist before accessing keys
         return set(self.item_id_to_idx.keys()) if hasattr(self, 'item_id_to_idx') else set()
 
-
     def get_known_users(self) -> Set[Any]:
-        # Ensure mappings exist before accessing keys
         return set(self.user_id_to_idx.keys()) if hasattr(self, 'user_id_to_idx') else set()
 
-
-    # --- ADDED save_model and load_model ---
+    # --- Save/Load Methods (Keep Existing save_model) ---
     def save_model(self, file_path: str):
         """Saves the HybridNCFRecommender state."""
         if self.model is None or self.item_features_array is None:
@@ -297,6 +286,7 @@ class HybridNCFRecommender(BaseRecommender):
         }, file_path)
         print(f"HybridNCFRecommender saved to {file_path}")
 
+    # --- UPDATED load_model ---
     @classmethod
     def load_model(cls, file_path: str, device: str = 'auto'):
         """Loads the HybridNCFRecommender state."""
@@ -305,7 +295,20 @@ class HybridNCFRecommender(BaseRecommender):
         else:
             resolved_device = torch.device(device)
 
-        checkpoint = torch.load(file_path, map_location=resolved_device) # Load directly to target device
+        # Load checkpoint to CPU first
+        # ** Explicitly set weights_only=False **
+        # WARNING: Setting weights_only=False can be insecure if the checkpoint is from an untrusted source.
+        try:
+            print(f"Loading Hybrid checkpoint from {file_path} with weights_only=False...")
+            checkpoint = torch.load(file_path, map_location='cpu', weights_only=False)
+        except AttributeError as e:
+            print(f"Error loading checkpoint (possible file corruption or wrong format): {e}")
+            raise RuntimeError(f"Could not load checkpoint file: {file_path}") from e
+        except RuntimeError as e:
+            print(f"RuntimeError loading checkpoint: {e}")
+            raise RuntimeError(f"Could not load checkpoint file: {file_path}") from e
+
+
         params = checkpoint['hyperparameters']
 
         # Instantiate wrapper with saved hyperparams
@@ -345,10 +348,10 @@ class HybridNCFRecommender(BaseRecommender):
             content_encoder_hidden_dims=params['content_encoder_hidden_dims'],
             final_mlp_layers=params['final_mlp_layers'],
             dropout=params['dropout']
-        ).to(resolved_device) # Move model to target device
-
-        # Load the state dict
+        )
+        # Load the state dict and move to target device
         recommender.model.load_state_dict(checkpoint['model_state_dict'])
+        recommender.model = recommender.model.to(resolved_device)
         recommender.model.eval() # Ensure model is in eval mode
 
         print(f"HybridNCFRecommender loaded from {file_path} to device {resolved_device}")

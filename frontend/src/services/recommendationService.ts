@@ -1,9 +1,9 @@
 // frontend/src/services/recommendationService.ts
-import { RecommendationResponse, User, RecommendationItem } from "../types";
+import { RecommendationResponse, User, RecommendationItem, AllModelsRecs } from "../types"; // Import new type
 
 // Use environment variable for API URL if available, otherwise default
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
-console.log("API Base URL:", API_BASE_URL); // Log the URL being used
+console.log("API Base URL:", API_BASE_URL);
 
 /**
  * Searches for users based on a query string.
@@ -12,64 +12,74 @@ console.log("API Base URL:", API_BASE_URL); // Log the URL being used
  */
 export const searchUsers = async (query: string, limit: number = 50): Promise<User[]> => {
   try {
-    // Construct the URL with query parameters
     const url = new URL(`${API_BASE_URL}/users`);
-    // Only add search param if query is not empty
     if (query) {
         url.searchParams.append('search', query);
     }
     url.searchParams.append('limit', String(limit));
-
-    const response = await fetch(url.toString()); // Use the constructed URL
-
+    const response = await fetch(url.toString());
     if (!response.ok) {
-      console.error(`HTTP error searching users! status: ${response.status}`);
-      try {
-        const errorBody = await response.json();
-        throw new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
-      } catch {
-        throw new Error(`HTTP error searching users! status: ${response.status}`);
-      }
+      const errorBody = await response.json().catch(() => ({ detail: `HTTP error searching users! status: ${response.status}` }));
+      throw new Error(errorBody.detail || `HTTP error searching users! status: ${response.status}`);
     }
-    const users: User[] = await response.json();
-    return users;
+    return await response.json();
   } catch (error) {
     console.error("Error searching users:", error);
-    throw error; // Re-throw the error for the component to handle
+    throw error;
   }
 };
 
 /**
- * Fetches recommendations for a specific user ID.
+ * Fetches ENSEMBLE recommendations for a specific user ID.
  * @param userId - The ID of the student.
  * @param k - The number of recommendations to fetch.
  */
 export const fetchRecommendations = async (userId: number, k: number = 10): Promise<RecommendationItem[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/recommendations/${userId}?k=${k}`);
-
     if (!response.ok) {
-      // Consider 404 as "user not found or no recommendations" -> return empty array
       if (response.status === 404) {
-        console.warn(`Recommendations endpoint returned 404 for user ${userId}. Likely unknown user or no recommendations.`);
+        console.warn(`Ensemble endpoint returned 404 for user ${userId}.`);
         return []; // Return empty list gracefully
       }
-      // Handle other errors
-      console.error(`HTTP error fetching recommendations! status: ${response.status}`);
-       try {
-            const errorBody = await response.json();
-            throw new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
-        } catch {
-             throw new Error(`HTTP error fetching recommendations! status: ${response.status}`);
-        }
+      const errorBody = await response.json().catch(() => ({ detail: `HTTP error fetching ensemble recommendations! status: ${response.status}` }));
+      throw new Error(errorBody.detail || `HTTP error fetching ensemble recommendations! status: ${response.status}`);
     }
     const data: RecommendationResponse = await response.json();
-    return data.recommendations || []; // Ensure we return an array
+    return data.recommendations || [];
   } catch (error) {
-    console.error(`Error fetching recommendations for user ${userId}:`, error);
-    throw error; // Re-throw error for component to handle
+    console.error(`Error fetching ENSEMBLE recommendations for user ${userId}:`, error);
+    throw error;
   }
 };
+
+/**
+ * Fetches recommendations from ALL individual models for a specific user ID.
+ * @param userId - The ID of the student.
+ * @param k - The number of recommendations per model to fetch.
+ */
+export const fetchAllModelRecommendations = async (userId: number, k: number = 10): Promise<AllModelsRecs> => {
+    try {
+        // Note the new endpoint URL
+        const response = await fetch(`${API_BASE_URL}/recommendations/${userId}/all_models?k=${k}`);
+        if (!response.ok) {
+            if (response.status === 404) {
+                 console.warn(`All models endpoint returned 404 for user ${userId}.`);
+                 // Return an empty object, the component can handle this
+                 return {};
+            }
+            const errorBody = await response.json().catch(() => ({ detail: `HTTP error fetching all model recommendations! status: ${response.status}` }));
+            throw new Error(errorBody.detail || `HTTP error fetching all model recommendations! status: ${response.status}`);
+        }
+        // The response schema has a 'results' key containing the dictionary
+        const data: { results: AllModelsRecs } = await response.json();
+        return data.results || {}; // Return the dictionary inside 'results' or empty object
+    } catch (error) {
+        console.error(`Error fetching all model recommendations for user ${userId}:`, error);
+        throw error;
+    }
+};
+
 
 /**
  * Fetches a single random user from the API.
@@ -77,27 +87,17 @@ export const fetchRecommendations = async (userId: number, k: number = 10): Prom
 export const fetchRandomUser = async (): Promise<User | null> => {
     try {
       const response = await fetch(`${API_BASE_URL}/users/random`);
-
       if (!response.ok) {
-        // Handle 404 specifically (no users in dataset)
         if (response.status === 404) {
           console.warn("API reported no users found for random selection.");
           return null;
         }
-        // Handle other errors
-        console.error(`HTTP error fetching random user! status: ${response.status}`);
-        try {
-          const errorBody = await response.json();
-          throw new Error(errorBody.detail || `HTTP error! status: ${response.status}`);
-        } catch {
-          throw new Error(`HTTP error fetching random user! status: ${response.status}`);
-        }
+        const errorBody = await response.json().catch(() => ({ detail: `HTTP error fetching random user! status: ${response.status}` }));
+        throw new Error(errorBody.detail || `HTTP error fetching random user! status: ${response.status}`);
       }
-      // API returns a single user object or null
-      const user: User | null = await response.json();
-      return user;
+      return await response.json();
     } catch (error) {
       console.error("Error fetching random user:", error);
-      throw error; // Re-throw error for component to handle
+      throw error;
     }
   };

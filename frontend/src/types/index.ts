@@ -1,74 +1,89 @@
 // frontend/src/types/index.ts
 
 export interface RecommendationItem {
-  presentation_id: string;
-  score: number;
-  module_id: string;
-  presentation_code: string;
-  module_presentation_length?: number; // Optional property
-}
-
-// The API returns an object with a 'recommendations' key
-export interface RecommendationResponse {
-  recommendations: RecommendationItem[];
-}
-
-export interface User {
-  student_id: number;
-}
-
-// Optional, if you fetch presentation details
-export interface Presentation {
     presentation_id: string;
+    score: number;
     module_id: string;
     presentation_code: string;
     module_presentation_length?: number;
-}
-
-// --- ADDED: Type definition for Model Info ---
-export interface ModelInfo {
-    id: string; // e.g., 'itemcf', 'popularity'
-    name: string; // e.g., 'Item-Based CF', 'Popularity Baseline'
-    description: string;
-    pros: string[];
-    cons: string[];
-}
-
-// --- ADDED: Example data (consider moving to its own file like src/data/modelInfo.ts) ---
-export const modelInfos: ModelInfo[] = [
-    {
-        id: 'popularity',
-        name: 'Popularity Baseline',
-        description: 'Recommends the most interacted-with courses across all users. Non-personalized.',
-        pros: ['Simple to implement', 'No cold-start problem for items', 'Good starting point'],
-        cons: ['Not personalized', 'Lower accuracy', 'Can create filter bubbles (popular items get more popular)'],
-    },
-    {
-        id: 'itemcf',
-        name: 'Item-Based CF (Demo Model)',
-        description: 'Recommends courses similar to those a user previously interacted with, based on co-interaction patterns across all users.',
-        pros: ['Personalized', 'Often effective for item discovery', 'Explainable (based on similar items)', 'Relatively efficient after pre-computation'],
-        cons: ['Data sparsity can be an issue', 'Cold-start problem for new users', 'Sensitive to interaction data quality', 'Limited by items seen in training'],
-    },
-    {
-        id: 'als',
-        name: 'ALS (Matrix Factorization)',
-        description: 'Uses Alternating Least Squares to decompose the user-item interaction matrix into latent factors, capturing underlying preferences.',
-        pros: ['Personalized', 'Can uncover latent features', 'Scalable (with libraries like implicit)'],
-        cons: ['Less interpretable than ItemCF', 'Requires hyperparameter tuning (factors, regularization)', 'Can suffer from cold-start'],
-    },
-    {
-        id: 'ncf',
-        name: 'Neural Collaborative Filtering',
-        description: 'Uses neural networks (GMF + MLP) to model complex user-item interactions, potentially capturing non-linear relationships.',
-        pros: ['Personalized', 'Can model complex patterns', 'Flexible architecture'],
-        cons: ['Computationally more expensive to train', 'Requires careful tuning (network structure, learning rate)', 'Can be harder to interpret', 'Prone to overfitting'],
-    },
-    {
-        id: 'hybrid',
-        name: 'Hybrid NCF (Content + CF)',
-        description: 'Combines collaborative filtering signals (like NCF) with item content features (like course length, VLE activity types) using neural networks.',
-        pros: ['Personalized', 'Can leverage item metadata', 'May improve recommendations for less popular items', 'Potentially mitigates some cold-start issues for items'],
-        cons: ['Increases model complexity', 'Feature engineering is crucial', 'Requires more data (item features)', 'Tuning becomes more complex'],
-    },
-];
+  }
+  
+  export interface RecommendationResponse { // Primarily for ensemble result now
+    recommendations: RecommendationItem[];
+  }
+  
+  // --- NEW: Type for the response from the /all_models endpoint ---
+  export type AllModelsRecs = {
+      // Key is the model name (string), value is the list of recommendations
+      [modelName: string]: RecommendationItem[];
+  };
+  
+  
+  export interface User {
+    student_id: number;
+  }
+  
+  export interface Presentation {
+      presentation_id: string;
+      module_id: string;
+      presentation_code: string;
+      module_presentation_length?: number;
+  }
+  
+  export interface ModelInfo {
+      id: string;
+      name: string; // This name should match the keys in AllModelsRecs and MODEL_WEIGHTS
+      description: string;
+      pros: string[];
+      cons: string[];
+      evaluationScore?: number; // Optional: Store NDCG or other metric here
+  }
+  
+  // Ensure model names here match the keys returned by the API (defined in model_loader.py)
+  export const modelInfos: ModelInfo[] = [
+      {
+          id: 'popularity',
+          name: 'Popularity', // Matches key
+          description: 'Recommends the most interacted-with courses across all users. Non-personalized.',
+          pros: ['Simple to implement', 'No cold-start problem for items', 'Good starting point'],
+          cons: ['Not personalized', 'Lower accuracy', 'Can create filter bubbles'],
+          // evaluationScore: 0.2153 // Example: NDCG@10 from report
+      },
+      {
+          id: 'itemcf',
+          name: 'ItemCF', // Matches key
+          description: 'Recommends courses similar to those a user previously interacted with, based on co-interaction patterns. Powers the main ensemble recommendation.',
+          pros: ['Personalized', 'Often effective for item discovery', 'Explainable (based on similar items)', 'Highly effective on this dataset'],
+          cons: ['Data sparsity can be an issue', 'Cold-start problem for new users', 'Limited by items seen in training'],
+           evaluationScore: 0.6153 // Example: NDCG@10 from report
+      },
+      {
+          id: 'als',
+          name: 'ALS (f=100)', // Matches key
+          description: 'Uses Alternating Least Squares to decompose the user-item interaction matrix into latent factors.',
+          pros: ['Personalized', 'Can uncover latent features', 'Scalable (with libraries like implicit)'],
+          cons: ['Less interpretable than ItemCF', 'Requires hyperparameter tuning', 'Can suffer from cold-start', 'Lower performance than ItemCF/NCF here'],
+           evaluationScore: 0.3844 // Example: NDCG@10 from report
+      },
+      {
+          id: 'ncf',
+          name: 'NCF (e=15)', // Matches key
+          description: 'Uses neural networks (GMF + MLP) to model complex user-item interactions.',
+          pros: ['Personalized', 'Can model complex patterns', 'Flexible architecture', 'Good performance'],
+          cons: ['Computationally expensive', 'Requires careful tuning', 'Harder to interpret', 'Prone to overfitting'],
+           evaluationScore: 0.5855 // Example: NDCG@10 from report
+      },
+      {
+          id: 'hybrid',
+          name: 'Hybrid (e=15)', // Matches key
+          description: 'Combines collaborative filtering signals (NCF) with item content features using neural networks.',
+          pros: ['Personalized', 'Can leverage item metadata', 'May improve for less popular items'],
+          cons: ['Increases model complexity', 'Feature engineering crucial', 'Tuning complex', 'Lower NDCG than ItemCF/NCF in eval'],
+           evaluationScore: 0.4698 // Example: NDCG@10 from report (note lower neg samples)
+      },
+  ];
+  
+  // Helper to find ModelInfo by name
+  export const findModelInfoByName = (name: string): ModelInfo | undefined => {
+      return modelInfos.find(m => m.name === name);
+  };

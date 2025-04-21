@@ -1,8 +1,8 @@
 // frontend/src/pages/HomePage.tsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion'; // Added scroll/transform hooks
-import { FiArrowRight, FiDatabase, FiSettings, FiZap, FiGithub, FiChevronDown } from 'react-icons/fi';
+import { motion, useScroll, useTransform } from 'framer-motion'; // Keep scroll/transform hooks
+import { FiArrowRight, FiDatabase, FiSettings, FiZap, FiGithub, FiChevronDown, FiLayers, FiBarChart2 } from 'react-icons/fi'; // Added FiLayers
 import ModelInfoModal from '../components/ModelInfoModal';
 import FeatureCard from '../components/FeatureCard'; // Import FeatureCard
 import ModelTag from '../components/ModelTag'; // Import ModelTag
@@ -29,7 +29,7 @@ const HomePage: React.FC = () => {
         setTimeout(() => setSelectedModel(null), 300);
     };
 
-    // --- Framer Motion Variants ---
+    // --- Framer Motion Variants (Keep Existing) ---
     const heroVariant = {
         hidden: { opacity: 0, y: -20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.8, delay: 0.2, ease: "easeOut" } },
@@ -70,8 +70,9 @@ const HomePage: React.FC = () => {
                     <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-text-primary mb-5 !leading-tight tracking-tight">
                         Unlock Learning Paths
                     </h1>
+                    {/* UPDATED HERO TEXT */}
                     <p className="text-lg md:text-xl text-text-secondary max-w-3xl mx-auto mb-10">
-                        Explore personalized course recommendations generated from real Open University student interaction data using collaborative filtering.
+                        Explore personalized course recommendations generated from real Open University student data using multiple models, including collaborative filtering and neural networks.
                     </p>
                     <motion.div
                         className="flex flex-col sm:flex-row items-center justify-center gap-4"
@@ -133,16 +134,19 @@ const HomePage: React.FC = () => {
                 <motion.section
                     variants={sectionVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
                 >
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-12 text-center">Core Approach: Finding Connections</h2>
+                    {/* UPDATED SECTION TITLE */}
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-12 text-center">Core Approach: From Data to Recommendations</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
                         <FeatureCard icon={<FiDatabase />} title="Data Processing">
                             Raw clickstream data is cleaned, filtered, and aggregated to quantify student engagement (implicit feedback) with each course presentation.
                         </FeatureCard>
-                        <FeatureCard icon={<FiSettings />} title="Item-Based CF Model">
-                            The system calculates similarity between courses based on user interaction patterns. Courses engaged with by similar student groups are deemed similar.
+                        {/* UPDATED CARD 2 */}
+                        <FeatureCard icon={<FiSettings />} title="Diverse Models">
+                             Multiple algorithms (ItemCF, ALS, NCF, Hybrid) learn different interaction patterns from the data to predict course relevance.
                         </FeatureCard>
-                        <FeatureCard icon={<FiZap />} title="Personalized Ranking">
-                            For a given student, unseen courses are scored based on their similarity to courses the student previously interacted with, generating personalized recommendations.
+                        {/* UPDATED CARD 3 */}
+                         <FeatureCard icon={<FiLayers />} title="Ensemble & Comparison">
+                             The demo provides a combined recommendation using a weighted average and allows comparison of individual model results.
                         </FeatureCard>
                     </div>
                     <motion.div
@@ -161,9 +165,11 @@ const HomePage: React.FC = () => {
                     variants={sectionVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
                 >
                     <div className="text-center">
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">Choosing the Right Model</h2>
+                        {/* UPDATED SECTION TITLE */}
+                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">Models Explored</h2>
+                        {/* UPDATED TEXT */}
                         <p className="text-text-secondary md:text-lg max-w-3xl mx-auto mb-10">
-                            We evaluated several recommendation techniques. Click on a model type to learn more about its approach, strengths, and weaknesses. The <strong className="text-primary font-semibold">ItemCF</strong> model powers this demo due to its effectiveness on the OULAD dataset.
+                             We evaluated several recommendation techniques. The demo utilizes all trained models, allowing comparison and providing a combined ensemble result. Click a model to learn more.
                         </p>
                         <div className="flex flex-wrap justify-center gap-3 md:gap-4">
                             {modelInfos.map((model) => (
@@ -171,6 +177,7 @@ const HomePage: React.FC = () => {
                                     key={model.id}
                                     model={model}
                                     onClick={() => openModal(model)}
+                                    // Highlight ItemCF as the best performing individual model
                                     isDemoModel={model.id === 'itemcf'}
                                 />
                             ))}
@@ -184,8 +191,9 @@ const HomePage: React.FC = () => {
                     variants={sectionVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
                 >
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">See It In Action</h2>
+                     {/* UPDATED TEXT */}
                     <p className="text-text-secondary md:text-lg max-w-2xl mx-auto mb-8">
-                        Ready to explore? Select a student ID in the demo section to view their personalized course recommendations.
+                        Ready to explore? Select a student ID in the demo section to view combined recommendations and compare individual model outputs.
                     </p>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Link to="/demo" className="btn btn-primary text-lg px-10 py-4 shadow-primary/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/50"> {/* Added focus style */}
