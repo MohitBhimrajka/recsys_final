@@ -20,7 +20,7 @@ from src.models.base import BaseRecommender
 from src.data.dataset import HybridDataset, create_mappings_and_unique_ids
 from src.models.content_encoder import ContentEncoder
 
-# --- HybridNCF nn.Module Definition (Keep As Is) ---
+# --- HybridNCF nn.Module Definition (No Changes) ---
 class HybridNCF(nn.Module):
     def __init__(self, n_users: int, n_items: int, item_feature_dim: int,
                  cf_embedding_dim: int = 16,
@@ -80,7 +80,7 @@ class HybridNCF(nn.Module):
 
 # --- Hybrid Wrapper (Implements BaseRecommender) ---
 class HybridNCFRecommender(BaseRecommender):
-    # ... (Keep __init__ method as before) ...
+    # --- __init__ (No Changes) ---
     def __init__(self,
                  user_col='id_student',
                  item_col='presentation_id',
@@ -124,7 +124,7 @@ class HybridNCFRecommender(BaseRecommender):
         self.item_feature_dim = None
         self.item_features_array = None
 
-    # ... (Keep fit method as before) ...
+    # --- fit (No Changes) ---
     def fit(self, interactions_df: pd.DataFrame, item_features_df: pd.DataFrame):
         print(f"Fitting {self.__class__.__name__}...")
         if self.user_col not in interactions_df.columns or self.item_col not in interactions_df.columns:
@@ -205,21 +205,33 @@ class HybridNCFRecommender(BaseRecommender):
         print("--- HybridNCF Training Finished ---")
         self.model.eval()
 
-    # ... (Keep predict method as before) ...
+    # --- predict (FIXED user_id type conversion) ---
     def predict(self, user_id: Any, item_ids: List[Any]) -> List[float]:
         if self.model is None or self.item_features_array is None:
             raise RuntimeError("Model not fitted or item features not processed. Call fit() first.")
-        if user_id not in self.user_id_to_idx:
-            return [0.0] * len(item_ids)
 
-        user_idx = self.user_id_to_idx[user_id]
+        # --- FIX: Ensure user_id is the correct type for dictionary lookup ---
+        try:
+            lookup_user_id = int(user_id) # Convert to standard int
+        except (ValueError, TypeError):
+            print(f"Warning: Could not convert user_id '{user_id}' to int. Returning 0 scores.")
+            return [0.0] * len(item_ids)
+        # ---------------------------------------------------------------------
+
+        # Use the converted ID for lookup
+        user_idx = self.user_id_to_idx.get(lookup_user_id)
+        if user_idx is None:
+            # print(f"Warning: User {lookup_user_id} not seen during training. Returning 0 scores.") # Keep commented
+            return [0.0] * len(item_ids)
 
         pred_item_indices = []
         pred_item_features = []
         original_pos_map = {}
 
         for i, iid in enumerate(item_ids):
-            item_idx = self.item_id_to_idx.get(iid)
+            # --- FIX: Ensure item_id is the correct type (string) ---
+            item_idx = self.item_id_to_idx.get(str(iid)) # Convert to string just in case
+            # ------------------------------------------------------
             if item_idx is not None and 0 <= item_idx < self.n_items:
                  pred_item_indices.append(item_idx)
                  # Retrieve pre-processed features using the internal index
@@ -227,6 +239,7 @@ class HybridNCFRecommender(BaseRecommender):
                  original_pos_map[item_idx] = i
 
         if not pred_item_indices:
+            # print(f"Warning: None of the provided item_ids for user {lookup_user_id} were known. Returning 0 scores.") # Use correct ID in log
             return [0.0] * len(item_ids)
 
         user_tensor = torch.tensor([user_idx] * len(pred_item_indices), dtype=torch.long).to(self.device)
@@ -245,18 +258,20 @@ class HybridNCFRecommender(BaseRecommender):
 
         final_scores = [0.0] * len(item_ids)
         for idx, score in zip(pred_item_indices, scores):
-             final_scores[original_pos_map[idx]] = float(score)
+             original_pos = original_pos_map.get(idx)
+             if original_pos is not None:
+                 final_scores[original_pos] = float(score) # Ensure float
 
         return final_scores
 
-    # --- Required Methods from BaseRecommender (Keep As Is) ---
+    # --- Required Methods from BaseRecommender (No Changes) ---
     def get_known_items(self) -> Set[Any]:
         return set(self.item_id_to_idx.keys()) if hasattr(self, 'item_id_to_idx') else set()
 
     def get_known_users(self) -> Set[Any]:
         return set(self.user_id_to_idx.keys()) if hasattr(self, 'user_id_to_idx') else set()
 
-    # --- Save/Load Methods (Keep Existing save_model) ---
+    # --- Save Method (No Changes) ---
     def save_model(self, file_path: str):
         """Saves the HybridNCFRecommender state."""
         if self.model is None or self.item_features_array is None:
@@ -286,7 +301,7 @@ class HybridNCFRecommender(BaseRecommender):
         }, file_path)
         print(f"HybridNCFRecommender saved to {file_path}")
 
-    # --- UPDATED load_model ---
+    # --- load_model (FIXED map key type conversion) ---
     @classmethod
     def load_model(cls, file_path: str, device: str = 'auto'):
         """Loads the HybridNCFRecommender state."""
@@ -295,9 +310,6 @@ class HybridNCFRecommender(BaseRecommender):
         else:
             resolved_device = torch.device(device)
 
-        # Load checkpoint to CPU first
-        # ** Explicitly set weights_only=False **
-        # WARNING: Setting weights_only=False can be insecure if the checkpoint is from an untrusted source.
         try:
             print(f"Loading Hybrid checkpoint from {file_path} with weights_only=False...")
             checkpoint = torch.load(file_path, map_location='cpu', weights_only=False)
@@ -311,7 +323,6 @@ class HybridNCFRecommender(BaseRecommender):
 
         params = checkpoint['hyperparameters']
 
-        # Instantiate wrapper with saved hyperparams
         recommender = cls(
             cf_embedding_dim=params['cf_embedding_dim'],
             content_embedding_dim=params['content_embedding_dim'],
@@ -326,19 +337,20 @@ class HybridNCFRecommender(BaseRecommender):
             device=str(resolved_device) # Pass device string
         )
 
-        # Load mappings and dimensions
-        recommender.user_id_to_idx = checkpoint['user_id_to_idx']
-        recommender.item_id_to_idx = checkpoint['item_id_to_idx']
+        # --- FIX: Load mappings and ensure correct key types ---
+        loaded_user_map = checkpoint.get('user_id_to_idx', {})
+        loaded_item_map = checkpoint.get('item_id_to_idx', {})
+        recommender.user_id_to_idx = {int(k): v for k, v in loaded_user_map.items()} # Ensure int keys
+        recommender.item_id_to_idx = {str(k): v for k, v in loaded_item_map.items()} # Ensure str keys
+        # -------------------------------------------------------
         recommender.n_users = params['n_users']
         recommender.n_items = params['n_items']
         recommender.item_feature_dim = params['item_feature_dim']
         recommender.idx_to_user_id = {v: k for k, v in recommender.user_id_to_idx.items()}
         recommender.idx_to_item_id = {v: k for k, v in recommender.item_id_to_idx.items()}
 
-        # Load the pre-processed item features array
         recommender.item_features_array = checkpoint['item_features_array']
 
-        # Instantiate the underlying HybridNCF model
         recommender.model = HybridNCF(
             n_users=recommender.n_users,
             n_items=recommender.n_items,
@@ -349,7 +361,6 @@ class HybridNCFRecommender(BaseRecommender):
             final_mlp_layers=params['final_mlp_layers'],
             dropout=params['dropout']
         )
-        # Load the state dict and move to target device
         recommender.model.load_state_dict(checkpoint['model_state_dict'])
         recommender.model = recommender.model.to(resolved_device)
         recommender.model.eval() # Ensure model is in eval mode

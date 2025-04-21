@@ -100,9 +100,10 @@ class ImplicitALSWrapper(BaseRecommender):
         try:
             # Use rank_items to get scores for the specific items
             ranked_indices, ranked_scores = self.model.rank_items(
-                user_idx,
-                user_items_row,
-                selected_items=item_idxs_to_rank
+                userid=user_idx, # Pass the user index here
+                user_items=user_items_row,
+                selected_items=item_idxs_to_rank,
+                filter_already_liked_items=False # <-- FIXED: Do not filter already-liked again
             )
 
             # Create a dictionary mapping the ranked internal index to its score

@@ -10,6 +10,7 @@ from tqdm.auto import tqdm # Use tqdm for progress bars
 import sys
 from pathlib import Path
 from typing import Union, List, Any, Set # Import necessary types
+import os # For cpu_count
 
 # Add project root for imports if needed
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -18,13 +19,12 @@ sys.path.append(str(project_root))
 from src.models.base import BaseRecommender # Import base class
 from src.data.dataset import CFDataset, create_mappings_and_unique_ids # Import dataset stuff
 
-# --- NCF nn.Module Definition (Keep As Is) ---
+# --- NCF nn.Module Definition (No Changes) ---
 class NCF(nn.Module):
     """
     Neural Collaborative Filtering (NCF) Model.
     Combines Generalized Matrix Factorization (GMF) and Multi-Layer Perceptron (MLP)
     to learn user-item interactions.
-    (Code identical to your provided version)
     """
     def __init__(self, n_users: int, n_items: int, mf_dim: int = 16, mlp_layers: list = [32, 16, 8], mlp_embedding_dim: int = 16, dropout: float = 0.1):
         super(NCF, self).__init__()
@@ -109,7 +109,7 @@ class NCF(nn.Module):
 
 # --- NCF Wrapper (Implements BaseRecommender Interface) ---
 class NCFRecommender(BaseRecommender):
-    # ... (Keep __init__ method as before) ...
+    # --- __init__ (No Changes) ---
     def __init__(self,
                  user_col='id_student',
                  item_col='presentation_id',
@@ -150,7 +150,7 @@ class NCFRecommender(BaseRecommender):
         self.optimizer = None
         self.criterion = nn.BCEWithLogitsLoss()
 
-    # ... (Keep fit method as before) ...
+    # --- fit (No Changes) ---
     def fit(self, interactions_df: pd.DataFrame):
         """
         Trains the NCF model.
@@ -224,18 +224,27 @@ class NCFRecommender(BaseRecommender):
         print("--- NCF Training Finished ---")
         self.model.eval() # Set model to eval mode after training
 
-    # ... (Keep predict method as before) ...
+    # --- predict (FIXED user_id type conversion) ---
     def predict(self, user_id: Any, item_ids: List[Any]) -> List[float]:
         """
         Predicts scores using the trained NCF model.
         """
         if self.model is None:
             raise RuntimeError("Model not fitted. Call fit() first.")
-        if user_id not in self.user_id_to_idx:
-            # print(f"Warning: User {user_id} not seen during training. Returning 0 scores.")
-            return [0.0] * len(item_ids)
 
-        user_idx = self.user_id_to_idx[user_id]
+        # --- FIX: Ensure user_id is the correct type for dictionary lookup ---
+        try:
+            lookup_user_id = int(user_id) # Convert to standard int
+        except (ValueError, TypeError):
+            print(f"Warning: Could not convert user_id '{user_id}' to int. Returning 0 scores.")
+            return [0.0] * len(item_ids)
+        # ---------------------------------------------------------------------
+
+        # Use the converted ID for lookup
+        user_idx = self.user_id_to_idx.get(lookup_user_id)
+        if user_idx is None:
+            # print(f"Warning: User {lookup_user_id} not seen during training. Returning 0 scores.") # Keep commented
+            return [0.0] * len(item_ids)
 
         # Map item IDs to indices, keeping track of original positions and unknowns
         pred_item_indices = []
@@ -243,14 +252,16 @@ class NCFRecommender(BaseRecommender):
         known_item_indices = [] # List to store indices of known items
 
         for i, iid in enumerate(item_ids):
-            item_idx = self.item_id_to_idx.get(iid)
+            # --- FIX: Ensure item_id is the correct type (string) ---
+            item_idx = self.item_id_to_idx.get(str(iid)) # Convert to string just in case
+            # ------------------------------------------------------
             if item_idx is not None: # Check if item is known
                 pred_item_indices.append(item_idx)
                 original_pos_map[item_idx] = i
                 known_item_indices.append(item_idx)
 
         if not pred_item_indices:
-            # print(f"Warning: None of the provided item_ids for user {user_id} were known. Returning 0 scores.")
+            # print(f"Warning: None of the provided item_ids for user {lookup_user_id} were known. Returning 0 scores.") # Use correct ID in log
             return [0.0] * len(item_ids)
 
         # Use the model's predict method
@@ -265,14 +276,14 @@ class NCFRecommender(BaseRecommender):
 
         return final_scores
 
-    # --- Required Methods from BaseRecommender (Keep As Is) ---
+    # --- Required Methods from BaseRecommender (No Changes) ---
     def get_known_items(self) -> Set[Any]:
         return set(self.item_id_to_idx.keys()) if hasattr(self, 'item_id_to_idx') else set()
 
     def get_known_users(self) -> Set[Any]:
         return set(self.user_id_to_idx.keys()) if hasattr(self, 'user_id_to_idx') else set()
 
-    # --- Save/Load Methods (Keep Existing save_model) ---
+    # --- Save Method (No Changes) ---
     def save_model(self, file_path: str):
          if self.model is None: raise RuntimeError("Model not fitted. Cannot save.")
          # Save hyperparameters and model state_dict
@@ -290,35 +301,27 @@ class NCFRecommender(BaseRecommender):
          }, file_path)
          print(f"NCFRecommender saved to {file_path}")
 
-    # --- UPDATED load_model ---
+    # --- load_model (FIXED map key type conversion) ---
     @classmethod
     def load_model(cls, file_path: str, device: str = 'auto'):
          """Loads the NCFRecommender state."""
-         # Determine device
          if device == 'auto':
              resolved_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
          else:
              resolved_device = torch.device(device)
 
-         # Load checkpoint to CPU first to potentially avoid GPU memory issues during unpickling
-         # ** Explicitly set weights_only=False **
-         # WARNING: Setting weights_only=False can be insecure if the checkpoint is from an untrusted source.
          try:
              print(f"Loading NCF checkpoint from {file_path} with weights_only=False...")
              checkpoint = torch.load(file_path, map_location='cpu', weights_only=False)
          except AttributeError as e:
-             # Handle potential AttributeError if file is corrupt or not a torch save file
              print(f"Error loading checkpoint (possible file corruption or wrong format): {e}")
              raise RuntimeError(f"Could not load checkpoint file: {file_path}") from e
          except RuntimeError as e:
-             # Handle other torch load errors specifically
              print(f"RuntimeError loading checkpoint: {e}")
              raise RuntimeError(f"Could not load checkpoint file: {file_path}") from e
 
-
          params = checkpoint['hyperparameters']
 
-         # Instantiate wrapper with saved hyperparams
          recommender = cls(
              mf_dim=params['mf_dim'], mlp_layers=params['mlp_layers'],
              mlp_embedding_dim=params['mlp_embedding_dim'], dropout=params['dropout'],
@@ -327,24 +330,26 @@ class NCFRecommender(BaseRecommender):
              device=str(resolved_device) # Pass device string
          )
 
-         # Load mappings
-         recommender.user_id_to_idx = checkpoint['user_id_to_idx']
-         recommender.item_id_to_idx = checkpoint['item_id_to_idx']
+         # --- FIX: Load mappings and ensure correct key types ---
+         loaded_user_map = checkpoint.get('user_id_to_idx', {})
+         loaded_item_map = checkpoint.get('item_id_to_idx', {})
+         recommender.user_id_to_idx = {int(k): v for k, v in loaded_user_map.items()} # Ensure int keys
+         recommender.item_id_to_idx = {str(k): v for k, v in loaded_item_map.items()} # Ensure str keys
+         # -------------------------------------------------------
          recommender.n_users = params['n_users']
          recommender.n_items = params['n_items']
          recommender.idx_to_user_id = {v: k for k, v in recommender.user_id_to_idx.items()}
          recommender.idx_to_item_id = {v: k for k, v in recommender.item_id_to_idx.items()}
 
 
-         # Instantiate the underlying NCF model and load its state dict
          recommender.model = NCF(
              n_users=recommender.n_users, n_items=recommender.n_items,
              mf_dim=params['mf_dim'], mlp_layers=params['mlp_layers'],
              mlp_embedding_dim=params['mlp_embedding_dim'], dropout=params['dropout']
          )
          recommender.model.load_state_dict(checkpoint['model_state_dict'])
-         recommender.model = recommender.model.to(resolved_device) # Move model to target device *after* loading state dict
-         recommender.model.eval() # Ensure model is in eval mode
+         recommender.model = recommender.model.to(resolved_device)
+         recommender.model.eval()
 
          print(f"NCFRecommender loaded from {file_path} to device {resolved_device}")
          return recommender
