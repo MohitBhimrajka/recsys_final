@@ -55,7 +55,7 @@ const AboutPage: React.FC = () => {
             <div className="relative max-w-3xl mx-auto">
                  <ProcessStep index={0} icon={<FiDatabase size={24} />} title="1. Data Foundation (OULAD)">
                     We begin with the
-                    <a href="https://analyse.kmi.open.ac.uk/open_dataset" target="_blank" rel="noopener noreferrer" className='mx-1'>Open University Learning Analytics Dataset</a>.
+                    <a href="https://www.kaggle.com/datasets/anlgrbz/student-demographics-online-education-dataoulad" target="_blank" rel="noopener noreferrer" className='mx-1'>Open University Learning Analytics Dataset</a>.
                     The goal is to recommend relevant <strong className='text-text-secondary'>course presentations</strong>. A 'presentation' represents a specific offering of a course module during a particular semester (e.g., module <code>'AAA'</code> offered in semester <code>'2013J'</code>, identified as <code className='text-xs'>AAA_2013J</code>).
                     <br/><br/>
                     Key data sources include:

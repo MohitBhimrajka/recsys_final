@@ -202,7 +202,7 @@ const DemoPage: React.FC = () => {
                 {/* Clear, structured explanation points */}
                 <div className="flex items-start gap-2">
                   <FiDatabase size={16} className="text-primary flex-shrink-0 mt-0.5"/>
-                  <span><strong className='text-text-secondary'>Data Source:</strong> Recommendations stem from the <a href="https://analyse.kmi.open.ac.uk/open_dataset" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OULAD dataset</a>, analyzing anonymized student engagement (clicks) in the Virtual Learning Environment (VLE).</span>
+                  <span><strong className='text-text-secondary'>Data Source:</strong> Recommendations stem from the <a href="https://www.kaggle.com/datasets/anlgrbz/student-demographics-online-education-dataoulad" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OULAD dataset</a>, analyzing anonymized student engagement (clicks) in the Virtual Learning Environment (VLE).</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <FiLayers size={16} className="text-primary flex-shrink-0 mt-0.5"/>
