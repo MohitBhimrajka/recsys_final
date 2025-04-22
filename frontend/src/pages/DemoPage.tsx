@@ -9,7 +9,8 @@ import PresentationDetailModal from '../components/PresentationDetailModal';
 import { fetchRecommendations, fetchAllModelRecommendations, fetchRandomUser } from '../services/recommendationService';
 import { RecommendationItem, AllModelsRecs, modelInfos, findModelInfoByName, ModelInfo, PresentationDetailInfo } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiRefreshCw, FiInfo, FiSearch, FiArrowDownCircle, FiLayers, FiBarChart2, FiGrid, FiCpu, FiSliders, FiInbox, FiChevronRight } from 'react-icons/fi'; // Adjusted icons
+import { FiRefreshCw, FiInfo, FiSearch, FiArrowDownCircle, FiLayers, FiBarChart2, FiGrid, FiCpu, FiSliders, FiInbox, FiChevronRight, FiChevronDown, FiChevronUp, FiDatabase, FiAlertTriangle, FiArrowRight } from 'react-icons/fi'; // Updated icons
+import { Link } from 'react-router-dom'; // Import Link for routing
 // Import the new Analysis Dashboard component
 import AnalysisDashboard from '../components/AnalysisDashboard';
 
@@ -82,6 +83,9 @@ const DemoPage: React.FC = () => {
   const [currentModelInfo, setCurrentModelInfo] = useState<ModelInfo | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [currentPresentationDetail, setCurrentPresentationDetail] = useState<PresentationDetailInfo | null>(null);
+  
+  // --- NEW STATE for Context Section Visibility ---
+  const [isContextVisible, setIsContextVisible] = useState(false);
 
   // --- Refs ---
   const userSelectorRef = useRef<any>(null);
@@ -130,11 +134,20 @@ const DemoPage: React.FC = () => {
   const handleHighlightCard = (presentationId: string) => dispatchCardState({ type: 'TOGGLE_HIGHLIGHT', payload: presentationId });
   const handleCardClick = (recommendation: RecommendationItem) => openDetailModal(recommendation);
 
+  // --- NEW Handler for Context Toggle ---
+  const toggleContext = () => setIsContextVisible(!isContextVisible);
+
   // --- Animation Variants --- (No Changes)
   const containerVariant = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } } };
   const itemVariant = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut'} } };
   const resultsVariant = { hidden: { opacity: 0, transition: { duration: 0.2 } }, visible: { opacity: 1, transition: { duration: 0.4 } }, exit: { opacity: 0, transition: { duration: 0.2 } } };
   const tabContentVariant = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut", delay: 0.1 } }, exit: { opacity: 0, y: -10, transition: { duration: 0.25, ease: "easeIn" } } };
+  
+  // New animation for context section
+  const contextSectionVariants = {
+    hidden: { height: 0, opacity: 0, marginTop: 0, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }, // Smooth ease-out for collapse
+    visible: { height: 'auto', opacity: 1, marginTop: '1rem', transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }, // Smooth ease-out for expand
+  };
 
   // --- Render ---
   return (
@@ -142,11 +155,11 @@ const DemoPage: React.FC = () => {
       {/* Header */}
       <motion.header className="text-center mb-12 md:mb-16 px-4" variants={itemVariant}>
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-4 tracking-tight"> Course Recommendation Demo </h1>
-        <p className="text-text-secondary md:text-lg max-w-3xl mx-auto"> Select a student ID (or try a random one) to view recommendations. We show a <strong className="text-primary">Combined Suggestion</strong> (best overall guess) and results from <strong className="text-primary">Individual Models</strong> for comparison and analysis. </p>
+        <p className="text-text-secondary md:text-lg max-w-3xl mx-auto"> Select a student ID (or try random) to view recommendations based on the <strong className="text-primary">OULAD dataset</strong>. Explore combined suggestions and compare individual model results. </p>
       </motion.header>
 
       {/* Control Section */}
-      <motion.div className="max-w-lg mx-auto mb-16 md:mb-20 px-4" variants={itemVariant}>
+      <motion.div className="max-w-lg mx-auto mb-12 md:mb-16 px-4" variants={itemVariant}>
         <div className="bg-surface rounded-xl shadow-xl border border-border-color p-6">
            <div className="flex items-center gap-3 mb-4"> <FiSearch className="text-primary text-xl flex-shrink-0" /> <h2 className="text-lg font-semibold text-text-primary">Select a Student</h2> </div>
            <UserSelector ref={userSelectorRef} onUserSelect={(userId) => handleUserSelect(userId, true)} isLoading={isLoading || isFetchingRandom} />
@@ -155,6 +168,73 @@ const DemoPage: React.FC = () => {
         </div>
       </motion.div>
 
+      {/* --- NEW: Collapsible Context Section --- */}
+      <motion.div className="max-w-4xl mx-auto mb-12 md:mb-16 px-4" layout> {/* Add layout for smooth reflow */}
+        <motion.button
+          onClick={toggleContext}
+          className="flex items-center justify-between w-full px-5 py-3 text-base font-medium text-left text-text-primary bg-surface/60 hover:bg-surface/80 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors shadow-md border border-border-color/50" // Enhanced styling
+          aria-expanded={isContextVisible}
+          aria-controls="oulad-context-panel"
+          whileTap={{ scale: 0.99 }}
+        >
+          <span className="flex items-center gap-2">
+            <FiInfo size={18}/>
+            Understanding the OULAD Recommendations
+          </span>
+          <motion.div animate={{ rotate: isContextVisible ? 180 : 0 }} transition={{ duration: 0.3 }}>
+            <FiChevronDown size={20}/>
+          </motion.div>
+        </motion.button>
+
+        <AnimatePresence>
+          {isContextVisible && (
+            <motion.div
+              id="oulad-context-panel"
+              key="context-content"
+              variants={contextSectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="overflow-hidden" // Important for smooth height animation
+            >
+              {/* Content Box Styling */}
+              <div className="mt-4 p-5 bg-surface/30 border border-border-color/50 rounded-lg text-sm text-text-muted space-y-3 shadow-inner">
+                {/* Clear, structured explanation points */}
+                <div className="flex items-start gap-2">
+                  <FiDatabase size={16} className="text-primary flex-shrink-0 mt-0.5"/>
+                  <span><strong className='text-text-secondary'>Data Source:</strong> Recommendations stem from the <a href="https://analyse.kmi.open.ac.uk/open_dataset" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OULAD dataset</a>, analyzing anonymized student engagement (clicks) in the Virtual Learning Environment (VLE).</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <FiLayers size={16} className="text-primary flex-shrink-0 mt-0.5"/>
+                  <span><strong className='text-text-secondary'>What's Recommended:</strong> We suggest specific course 'presentations' (e.g., <code className='text-xs px-1 py-0.5 bg-background/50 rounded'>AAA_2013J</code>), representing a unique offering of a course module in a semester.</span>
+                </div>
+                <div className="flex items-start gap-2 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-md"> {/* Highlighted Note */}
+                  <FiAlertTriangle size={18} className="text-yellow-400 flex-shrink-0 mt-0.5"/>
+                  <span className='text-yellow-200'><strong className='text-yellow-100'>Crucial Context (Filtering Impact):</strong> To ensure model quality, data was filtered based on interaction counts. This demo's models were trained on only <strong className='underline decoration-dotted'>22 unique course presentations</strong>. This significantly limits the diversity of recommendations you'll see here.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <FiGrid size={16} className="text-primary flex-shrink-0 mt-0.5"/>
+                  <span><strong className='text-text-secondary'>Understanding Tabs:</strong>
+                    <ul className="list-disc list-inside ml-4 mt-1 text-xs space-y-1">
+                      <li><strong className='text-text-secondary'>Combined Suggestion:</strong> Our best overall guess, using a weighted average of multiple models.</li>
+                      <li><strong className='text-text-secondary'>Analysis & Comparison:</strong> Tools to directly compare different models' outputs.</li>
+                      <li><strong className='text-text-secondary'>Individual Models (ItemCF, NCF, etc.):</strong> Raw rankings from each specific algorithm.</li>
+                    </ul>
+                  </span>
+                </div>
+                {/* Link to About Page */}
+                <div className="pt-2 text-right">
+                  <Link to="/about" className="text-primary hover:text-primary-light text-sm font-medium inline-flex items-center gap-1 transition-colors">
+                    See Full Methodology <FiArrowRight size={16} />
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+      {/* --- End Context Section --- */}
+
       {/* --- Results Section --- */}
       <div ref={resultsRef} className="min-h-[400px]">
         <AnimatePresence mode="wait">
@@ -162,23 +242,12 @@ const DemoPage: React.FC = () => {
             {isLoading && selectedUserId && ( <motion.div key="loading" variants={resultsVariant} initial="hidden" animate="visible" exit="exit" className="w-full px-4"> <h2 className="text-xl font-semibold mb-10 text-center text-text-muted animate-pulse"> Generating Recommendations for Student <span className='font-bold text-primary'>{selectedUserId}</span>... </h2> <div className="border-b border-border-color mb-8 flex justify-center"> <div className="animate-pulse bg-surface/80 h-12 w-48 rounded-t-lg mr-1"></div> <div className="animate-pulse bg-surface/80 h-12 w-48 rounded-t-lg ml-1"></div> <div className="animate-pulse bg-surface/80 h-12 w-48 rounded-t-lg ml-1"></div> </div> <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8"> {Array.from({ length: 6 }).map((_, index) => <SkeletonCard key={`skel-${index}`} />)} </div> </motion.div> )}
              {/* Error State */}
              {!isLoading && error && ( <motion.div key="error" variants={resultsVariant} initial="hidden" animate="visible" exit="exit"> <ErrorMessage message={error} /> </motion.div> )}
-              {/* Initial State */}
-              {!isLoading && !error && !selectedUserId && ( <motion.div key="initial-prompt" variants={resultsVariant} initial="hidden" animate="visible" exit="exit" className="text-center text-text-muted pt-10 pb-10 min-h-[300px] px-4"> <motion.div initial={{ y: -5 }} animate={{ y: [0, -5, 0], transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" } }}> <FiArrowDownCircle size={48} className="mx-auto mb-5 text-border-color opacity-60" /> </motion.div> <p className="text-lg font-medium text-text-secondary">Waiting for Input</p> <p className="text-sm mt-1">Select a student above to see recommendations.</p> </motion.div> )}
+              {/* Initial State - Slightly simpler message now */}
+              {!isLoading && !error && !selectedUserId && ( <motion.div key="initial-prompt" variants={resultsVariant} initial="hidden" animate="visible" exit="exit" className="text-center text-text-muted pt-10 pb-10 min-h-[300px] px-4"> <motion.div initial={{ y: -5 }} animate={{ y: [0, -5, 0], transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" } }}> <FiArrowDownCircle size={48} className="mx-auto mb-5 text-border-color opacity-60" /> </motion.div> <p className="text-lg font-medium text-text-secondary">Select a Student to Begin</p> <p className="text-sm mt-1">Use the search or random button above.</p> </motion.div> )}
 
               {/* --- Results Display State (Tabs) --- */}
              {!isLoading && !error && selectedUserId && (
                  <motion.div key={`results-${selectedUserId}`} variants={resultsVariant} initial="hidden" animate="visible" exit="exit">
-                    {/* Overall Explanation Section */}
-                    <motion.div className="mb-10 md:mb-12 px-4 py-5 bg-surface/50 border border-border-color rounded-lg max-w-4xl mx-auto text-sm" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} >
-                        <h3 className="font-semibold text-base text-text-primary mb-3 flex items-center gap-2"><FiInfo size={18}/> Understanding the Results for Student <span className="text-primary">{selectedUserId}</span></h3>
-                        <ul className="list-none space-y-1.5 text-text-muted pl-1">
-                            <li><FiChevronRight className="inline mr-1 opacity-70"/> The <strong className="text-text-secondary">Combined Suggestion</strong> tab shows our best overall recommendations (a weighted mix of models).</li>
-                            <li><FiChevronRight className="inline mr-1 opacity-70"/> The <strong className="text-text-secondary">Analysis & Comparison</strong> tab provides tools to directly compare model outputs side-by-side.</li>
-                            <li><FiChevronRight className="inline mr-1 opacity-70"/> The <strong className="text-text-secondary">Individual Model</strong> tabs (ItemCF, NCF, etc.) show raw rankings from each algorithm.</li>
-                            <li><FiChevronRight className="inline mr-1 opacity-70"/> <strong className="text-text-secondary">Scores</strong> indicate predicted relevance (higher is better), and <strong className="text-text-secondary">Rank #1</strong> is the top suggestion for each list.</li>
-                        </ul>
-                    </motion.div>
-
                      {/* Tab Buttons */}
                       <div className="border-b border-border-color mb-8 md:mb-12 px-4 overflow-x-auto sticky top-16 bg-background/80 backdrop-blur-sm z-40"> {/* Made tabs sticky */}
                            <nav className="-mb-px flex justify-start sm:justify-center space-x-1 sm:space-x-3" aria-label="Tabs">

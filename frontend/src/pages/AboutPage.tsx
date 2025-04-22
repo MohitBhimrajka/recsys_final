@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiDatabase, FiFilter, FiTrendingUp, FiCheckCircle, FiXCircle, FiInfo, FiCode, FiGithub, FiExternalLink, FiLayers, FiCpu, FiUsers, FiBox, FiAlertTriangle } from 'react-icons/fi'; // Added/updated icons
+import { FiDatabase, FiFilter, FiTrendingUp, FiCheckCircle, FiXCircle, FiInfo, FiCode, FiGithub, FiExternalLink, FiLayers, FiCpu, FiUsers, FiBox, FiAlertTriangle, FiArrowRight } from 'react-icons/fi'; // Added FiArrowRight
 import ProcessStep from '../components/ProcessStep';
 import ModelInfoModal from '../components/ModelInfoModal'; // Import modal
 import { modelInfos, ModelInfo, findModelInfoByName } from '../types'; // Import model info
@@ -55,30 +55,47 @@ const AboutPage: React.FC = () => {
             <div className="relative max-w-3xl mx-auto">
                  <ProcessStep index={0} icon={<FiDatabase size={24} />} title="1. Data Foundation (OULAD)">
                     We begin with the
-                    <a href="https://analyse.kmi.open.ac.uk/open_dataset" target="_blank" rel="noopener noreferrer" className='mx-1'>Open University Learning Analytics Dataset</a>,
-                    focusing on student demographics (<code>studentInfo</code>), course structures (<code>courses</code>), registrations (<code>studentRegistration</code>),
-                    and detailed Virtual Learning Environment (VLE) interactions (<code>studentVle</code>).
+                    <a href="https://analyse.kmi.open.ac.uk/open_dataset" target="_blank" rel="noopener noreferrer" className='mx-1'>Open University Learning Analytics Dataset</a>.
+                    The goal is to recommend relevant <strong className='text-text-secondary'>course presentations</strong>. A 'presentation' represents a specific offering of a course module during a particular semester (e.g., module <code>'AAA'</code> offered in semester <code>'2013J'</code>, identified as <code className='text-xs'>AAA_2013J</code>).
+                    <br/><br/>
+                    Key data sources include:
+                    <ul className="list-disc list-inside text-sm mt-2 space-y-1 pl-2">
+                        <li><strong className='text-text-secondary'>Student VLE Interactions (<code>studentVle.csv</code>):</strong> Records of student clicks on course materials, forums, quizzes, etc. This is the <strong className='text-text-secondary'>primary signal</strong> for engagement.</li>
+                        <li>Student Demographics (<code>studentInfo.csv</code>)</li>
+                        <li>Course Structures & Presentations (<code>courses.csv</code>)</li>
+                        <li>Student Registrations (<code>studentRegistration.csv</code>)</li>
+                    </ul>
                 </ProcessStep>
 
                  <ProcessStep index={1} icon={<FiFilter size={24} />} title="2. Preprocessing & Filtering">
-                    Raw data is cleaned (missing values handled, types corrected). VLE interactions are filtered to match active registration periods. Crucially, to improve model stability and focus on engaged users, we remove users with &lt; 5 interactions and items (course presentations) with &lt; 5 interacting users. This results in a core dataset of ~25k users and <strong>only 22 unique course presentations</strong>.
-                </ProcessStep>
+                    Raw data is cleaned (handling missing values, correcting types). VLE interactions are filtered to match active registration periods.
+                    <br/><br/>
+                    <strong className='text-text-secondary'>Crucially, to improve model stability and focus on engaged users/items:</strong>
+                     <ul className="list-disc list-inside text-sm mt-2 space-y-1 pl-2">
+                         <li>Users with fewer than 5 interactions were removed.</li>
+                         <li>Course presentations interacted with by fewer than 5 users were removed.</li>
+                    </ul>
+                     <div className="mt-3 p-3 bg-yellow-900/10 border border-yellow-700/30 rounded-md text-sm">
+                        <FiAlertTriangle className="inline mr-1 text-yellow-400 mb-1"/>
+                        <strong className='text-yellow-200'>Resulting Dataset Context:</strong> This filtering significantly reduced the data scope. The models in this demo were ultimately trained on interactions involving only <strong className='underline decoration-dotted'>22 unique course presentations</strong>. Understanding this is key to interpreting the recommendations' diversity (or lack thereof).
+                     </div>
+                 </ProcessStep>
 
                  <ProcessStep index={2} icon={<FiTrendingUp size={24} />} title="3. Quantifying Engagement">
-                    Filtered VLE clicks are summed for each student-presentation pair. We calculate an <code>implicit_feedback</code> score using <code>log1p(total_clicks)</code>. This log transformation dampens the effect of extremely high click counts, giving more weight to initial engagement and creating a more balanced signal for the models. Higher scores indicate stronger engagement.
+                    Filtered VLE clicks are summed for each student-presentation pair. We calculate an <code>implicit_feedback</code> score using <code>log1p(total_clicks)</code>. This log transformation dampens the effect of extremely high click counts, giving more weight to initial engagement and creating a more balanced signal for the models. Higher scores indicate stronger perceived engagement.
                 </ProcessStep>
 
                  <ProcessStep index={3} icon={<FiCpu size={24} />} title="4. Learning Interaction Patterns">
                     Multiple algorithms analyze the processed <code>implicit_feedback</code> data:
                     <ul className="list-disc list-inside text-sm mt-3 space-y-1.5 pl-2">
                          <motion.li custom={0} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>
-                            <ClickableModelName name="ItemCF" onClick={openModelInfoModal} />: Calculates course similarity based on how often students interact with the same pairs of courses. Effective for finding "users who liked X also liked Y" patterns.
+                            <ClickableModelName name="ItemCF" onClick={openModelInfoModal} />: Calculates course similarity based on co-interaction patterns.
                          </motion.li>
                          <motion.li custom={1} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>
-                            <ClickableModelName name="ALS (f=100)" onClick={openModelInfoModal} />: A matrix factorization technique that finds latent (hidden) features representing users and courses.
+                            <ClickableModelName name="ALS (f=100)" onClick={openModelInfoModal} />: Matrix factorization finding latent user/course features.
                          </motion.li>
                           <motion.li custom={2} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>
-                            <ClickableModelName name="NCF (e=15)" onClick={openModelInfoModal} /> / <ClickableModelName name="Hybrid (e=15)" onClick={openModelInfoModal} />: Neural network approaches that model complex, non-linear interactions. The Hybrid model also incorporates course content features (like duration).
+                            <ClickableModelName name="NCF (e=15)" onClick={openModelInfoModal} /> / <ClickableModelName name="Hybrid (e=15)" onClick={openModelInfoModal} />: Neural networks modeling complex interactions.
                           </motion.li>
                      </ul>
                 </ProcessStep>
@@ -86,8 +103,8 @@ const AboutPage: React.FC = () => {
                  <ProcessStep index={4} icon={<FiCheckCircle size={24} />} title="5. Generating Scores">
                      When a student ID is selected in the demo:
                      <ul className="list-disc list-inside text-sm mt-3 space-y-1.5 pl-2">
-                        <motion.li custom={0} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>Each trained model predicts a relevance score for candidate courses (those the student hasn't seen). These individual scores are displayed for comparison.</motion.li>
-                        <motion.li custom={1} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>An <strong className='text-text-secondary'>ensemble score</strong> is also calculated by combining the normalized scores from each model, weighted by their offline evaluation performance (e.g., giving more weight to <ClickableModelName name="ItemCF" onClick={openModelInfoModal} />).</motion.li>
+                        <motion.li custom={0} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>Each trained model predicts a relevance score for candidate courses (those the student hasn't seen).</motion.li>
+                        <motion.li custom={1} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>An <strong className='text-text-secondary'>ensemble score</strong> is calculated by combining the normalized scores from each model, weighted by their offline performance (giving more weight to <ClickableModelName name="ItemCF" onClick={openModelInfoModal} />).</motion.li>
                      </ul>
                 </ProcessStep>
 
@@ -130,26 +147,27 @@ const AboutPage: React.FC = () => {
                     <FiAlertTriangle className="text-yellow-400" /> Important Considerations
                 </h2>
                 <motion.ul className="list-none space-y-4 text-text-secondary text-sm md:text-base">
-                    {/* Rephrased Limitations */}
+                    {/* Added presentation clarification */}
+                    <motion.li custom={2} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
+                        <FiBox className="text-blue-400 mr-3 mt-1 flex-shrink-0" size={18} />
+                        <span><strong className="text-text-primary">Small Item Pool:</strong> Due to data filtering for model stability, only <strong className='underline decoration-dotted'>22 unique course presentations</strong> remained. This significantly limits the diversity of recommendations.</span>
+                    </motion.li>
+                    {/* Other limitations kept */}
                     <motion.li custom={0} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
                         <FiUsers className="text-red-500 mr-3 mt-1 flex-shrink-0" size={18} />
-                        <span><strong className="text-text-primary">Cold Start:</strong> New students (or those filtered out due to low activity) won't receive personalized recommendations initially, as models rely on past interactions.</span>
+                        <span><strong className="text-text-primary">Cold Start:</strong> New students won't receive personalized recommendations initially.</span>
                     </motion.li>
                     <motion.li custom={1} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
                         <FiTrendingUp className="text-yellow-500 mr-3 mt-1 flex-shrink-0" size={18} />
-                        <span><strong className="text-text-primary">Implicit Feedback Nuance:</strong> Using click counts (even log-transformed) assumes clicks equal positive interest. It doesn't capture negative experiences or differentiate browsing from deep engagement.</span>
+                        <span><strong className="text-text-primary">Implicit Feedback Nuance:</strong> Click counts (even log-transformed) assume clicks equal positive interest.</span>
                     </motion.li>
-                     <motion.li custom={2} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
-                        <FiBox className="text-blue-400 mr-3 mt-1 flex-shrink-0" size={18} />
-                        <span><strong className="text-text-primary">Small Item Pool:</strong> Due to data filtering for model stability, only 22 unique course presentations remained. This limits the diversity of recommendations.</span>
-                    </motion.li>
-                     <motion.li custom={3} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
+                    <motion.li custom={3} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
                         <FiDatabase className="text-green-500 mr-3 mt-1 flex-shrink-0" size={18} />
-                        <span><strong className="text-text-primary">Static Data:</strong> The demo models are trained on a fixed snapshot of OULAD. A real-world system needs regular retraining to adapt to new data and user behavior changes.</span>
+                        <span><strong className="text-text-primary">Static Data:</strong> The demo models use a fixed OULAD snapshot; real systems need retraining.</span>
                     </motion.li>
-                     <motion.li custom={4} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
+                    <motion.li custom={4} variants={listItemVariant} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="flex items-start">
                          <FiLayers className="text-purple-400 mr-3 mt-1 flex-shrink-0" size={18} />
-                         <span><strong className="text-text-primary">Simple Ensemble:</strong> The "Combined Suggestion" uses a basic weighted average. More advanced ensemble techniques could potentially yield better results but add complexity.</span>
+                         <span><strong className="text-text-primary">Simple Ensemble:</strong> Uses a basic weighted average; more advanced techniques could be explored.</span>
                     </motion.li>
                 </motion.ul>
             </motion.div>

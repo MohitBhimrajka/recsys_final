@@ -70,9 +70,11 @@ const HomePage: React.FC = () => {
                     <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-text-primary mb-5 !leading-tight tracking-tight">
                          Personalized Course Recommendations
                     </h1>
-                    {/* Updated Sub-headline */}
+                    {/* === MODIFIED SUB-HEADLINE === */}
                     <p className="text-lg md:text-xl text-text-secondary max-w-3xl mx-auto mb-10">
-                        Discover relevant Open University courses using recommendations generated from real student VLE interactions and multiple collaborative filtering models.
+                        Discover relevant Open University course <strong className='text-text-primary'>presentations</strong> (specific offerings like <code className='text-sm'>AAA_2013J</code>) using recommendations generated from the <FiDatabase className='inline mb-1 mx-1 opacity-70' />
+                        <a href="https://www.kaggle.com/datasets/anlgrbz/student-demographics-online-education-dataoulad" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OULAD dataset</a>.
+                        This system analyzes millions of anonymized student interactions within the Virtual Learning Environment (VLE) to suggest relevant content.
                     </p>
                     {/* Button Group (Kept structure) */}
                     <motion.div
@@ -123,9 +125,7 @@ const HomePage: React.FC = () => {
                 >
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">The OULAD Dataset: Real Interactions</h2>
                     <p className="text-text-secondary md:text-lg">
-                        Navigating online courses can be tough. This project analyzes millions of anonymized student interactions from the
-                        <a href="https://analyse.kmi.open.ac.uk/open_dataset" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline mx-1">Open University Learning Analytics Dataset (OULAD)</a>
-                        to uncover patterns and guide students towards relevant content based on collective behavior.
+                        Navigating online courses can be tough. This project analyzes millions of anonymized student interactions from the OULAD dataset to uncover patterns and guide students towards relevant content based on collective behavior.
                     </p>
                 </motion.section>
 
