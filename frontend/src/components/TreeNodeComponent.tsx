@@ -11,14 +11,9 @@ import { VscJson, VscMarkdown, VscNotebook, VscSymbolFile, VscVmActive } from "r
 import { DiPython, DiReact, DiHtml5, DiCss3, DiJavascript1, DiTerminal } from "react-icons/di";
 import { FaGitAlt, FaDocker, FaDatabase, FaNodeJs } from "react-icons/fa";
 import { SiJson, SiMarkdown, SiJupyter, SiTypescript, SiFastapi, SiVite, SiTailwindcss, SiEslint, SiPostcss, SiPnpm, SiGithubactions } from "react-icons/si";
-
-interface TreeNode {
-    name: string;
-    path: string;
-    type: 'folder' | 'file';
-    comment?: string;
-    children?: TreeNode[];
-}
+// Import the new animation utilities
+import { optimizedVariants, smoothTransition } from '../utils/animationUtils';
+import { TreeNode } from '../types/codeExplorer';
 
 // Icon Mapping Function (Unchanged from Phase 4)
 const getNodeIcon = (node: TreeNode, isOpen: boolean): React.ReactNode => {
@@ -81,25 +76,39 @@ interface TreeNodeComponentProps {
 }
 
 const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, githubBaseUrl, searchTerm, allExpanded, filterVisible }) => {
-    // *** MODIFICATION: Default open state now relies on allExpanded prop initially ***
-    const [isOpen, setIsOpen] = useState(allExpanded);
     const isFolder = node.type === 'folder';
-    const toggleOpen = () => { if (isFolder) setIsOpen(!isOpen); };
+    
+    // Always expand root level (level 0) folders by default
+    const [isOpen, setIsOpen] = useState(() => {
+        if (level === 0 && isFolder) {
+            return true; // Root folders always start expanded
+        }
+        return allExpanded; // Otherwise follow the allExpanded prop
+    });
+    
+    const toggleOpen = () => { 
+        if (isFolder) setIsOpen(!isOpen); 
+    };
 
-    // Sync open state with the external `allExpanded` prop
+    // Sync open state with the external `allExpanded` prop from parent
+    // and ensure root directories stay expanded
     useEffect(() => {
         if (isFolder) {
-             setIsOpen(allExpanded);
+            if (level === 0) {
+                // Root level folders should always be expanded
+                setIsOpen(true);
+            } else {
+                // Non-root folders follow the allExpanded state
+                setIsOpen(allExpanded);
+            }
         }
-        // Do not automatically collapse if already open when allExpanded becomes false
-        // Let user manually collapse or use the Collapse All button
-    }, [allExpanded, isFolder]);
+    }, [allExpanded, isFolder, level]);
 
-    // Search logic (Unchanged)
+    // Search logic
     const nameLower = node.name.toLowerCase();
     const searchTermLower = searchTerm.toLowerCase();
     const matchesSearch = searchTermLower === '' || nameLower.includes(searchTermLower) || (node.comment?.toLowerCase() || '').includes(searchTermLower);
-    const hasMatchingChild = (currentNode: TreeNode): boolean => { /* ... implementation unchanged ... */
+    const hasMatchingChild = (currentNode: TreeNode): boolean => { 
         if (!currentNode.children) return false;
         return currentNode.children.some(child =>
             child.name.toLowerCase().includes(searchTermLower) ||
@@ -116,33 +125,94 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, gith
     const icon = getNodeIcon(node, isOpen);
     const textColor = isFolder ? 'text-text-primary font-medium' : 'text-text-secondary';
 
-    // Node Content JSX (Unchanged)
+    // Node Content JSX
     const nodeContent = (
-        <div className={`flex items-center py-1 group hover:bg-border-color/20 rounded relative outline-none ${isFolder ? 'cursor-pointer' : ''} focus-visible:ring-1 focus-visible:ring-primary`} onClick={toggleOpen} role={isFolder ? 'button' : undefined} tabIndex={isFolder ? 0 : -1} onKeyDown={(e) => { if (isFolder && (e.key === 'Enter' || e.key === ' ')) toggleOpen(); }} style={{ paddingLeft: `${level * 24}px` }} title={node.path} >
-             {level > 0 && Array.from({ length: level }).map((_, i) => ( <span key={i} className="absolute top-0 bottom-0 left-0 w-px bg-border-color/30" style={{ transform: `translateX(${(i * 24) + 10}px)` }}></span> ))}
-             <span className="w-[18px] text-center mr-1 flex-shrink-0 text-text-muted/80 z-10"> {isFolder && (isOpen ? <FiMinusSquare size={14} /> : <FiPlusSquare size={14} />)} </span>
+        <div 
+            className={`flex items-center py-1 group hover:bg-border-color/20 rounded transition-colors duration-200 relative outline-none ${isFolder ? 'cursor-pointer' : ''} focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface`} 
+            onClick={toggleOpen} 
+            role={isFolder ? 'button' : undefined} 
+            tabIndex={isFolder ? 0 : -1} 
+            onKeyDown={(e) => { if (isFolder && (e.key === 'Enter' || e.key === ' ')) toggleOpen(); }} 
+            style={{ 
+                paddingLeft: `${level * 24}px`, 
+                // Apply hardware acceleration for smoother rendering
+                transform: 'translateZ(0)',
+                willChange: 'transform, opacity'
+            }} 
+            title={node.path}
+        >
+             {level > 0 && Array.from({ length: level }).map((_, i) => ( 
+                <span 
+                    key={i} 
+                    className="absolute top-0 bottom-0 left-0 w-px bg-border-color/30" 
+                    style={{ transform: `translateX(${(i * 24) + 10}px)` }}
+                ></span> 
+             ))}
+             <span className="w-[18px] text-center mr-1 flex-shrink-0 text-text-muted/80 z-10"> 
+                {isFolder && (isOpen ? <FiMinusSquare size={14} /> : <FiPlusSquare size={14} />)} 
+             </span>
              <span className={`mr-2 flex-shrink-0 flex items-center z-10`}>{icon}</span>
-             <span className={`${textColor} z-10 ${!matchesSearch && searchTerm ? 'opacity-60' : ''}`}> {node.name} </span>
-             {node.comment && ( <span className="ml-3 text-xs text-text-muted/80 italic opacity-0 group-hover:opacity-100 transition-opacity hidden md:inline z-10"> {node.comment} </span> )}
-             <a href={linkUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="ml-auto mr-2 text-text-muted hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity z-10 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm" title={`View ${node.name} on GitHub`} > <FiExternalLink size={14} /> </a>
+             <span className={`${textColor} z-10 ${!matchesSearch && searchTerm ? 'opacity-60' : ''}`}> 
+                {node.name} 
+             </span>
+             {node.comment && ( 
+                <span className="ml-3 text-xs text-text-muted/80 italic opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:inline z-10"> 
+                    {node.comment} 
+                </span> 
+             )}
+             <a 
+                href={linkUrl} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                onClick={(e) => e.stopPropagation()} 
+                className="ml-auto mr-2 text-text-muted hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-sm" 
+                title={`View ${node.name} on GitHub`} 
+             > 
+                <FiExternalLink size={14} /> 
+             </a>
         </div>
     );
 
-    // Render Logic (Unchanged)
-    const selfRender = ( <div className={`${!matchesSearch && hasVisibleChild ? 'opacity-70' : ''}`}> {nodeContent} </div> )
+    // Render Logic with optimized animations
+    const selfRender = ( 
+        <div className={`${!matchesSearch && hasVisibleChild ? 'opacity-70' : ''}`}> 
+            {nodeContent} 
+        </div> 
+    );
 
     return (
         <>
             {(matchesSearch || hasVisibleChild) && selfRender}
             {isFolder && node.children && (
-                 <AnimatePresence initial={false}>
-                     {isOpen && (
-                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease: 'easeInOut' }} className="overflow-hidden" >
-                             {node.children.map((child, index) => ( <TreeNodeComponent key={`${child.path}-${index}`} node={child} level={level + 1} githubBaseUrl={githubBaseUrl} searchTerm={searchTerm} allExpanded={allExpanded} filterVisible={true} /> ))}
-                         </motion.div>
-                     )}
-                 </AnimatePresence>
-             )}
+                <AnimatePresence initial={false}>
+                    {isOpen && (
+                        <motion.div 
+                            initial={{ height: 0, opacity: 0 }} 
+                            animate={{ height: 'auto', opacity: 1 }} 
+                            exit={{ height: 0, opacity: 0 }} 
+                            transition={smoothTransition}
+                            className="overflow-hidden" 
+                            style={{ 
+                                // Add hardware acceleration properties
+                                willChange: 'height, opacity',
+                                transform: 'translateZ(0)'
+                            }}
+                        >
+                            {node.children.map((child, index) => ( 
+                                <TreeNodeComponent 
+                                    key={`${child.path}-${index}`} 
+                                    node={child} 
+                                    level={level + 1} 
+                                    githubBaseUrl={githubBaseUrl} 
+                                    searchTerm={searchTerm} 
+                                    allExpanded={allExpanded} 
+                                    filterVisible={true} 
+                                /> 
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            )}
         </>
     );
 };
